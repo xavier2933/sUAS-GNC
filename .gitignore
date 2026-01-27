@@ -1,0 +1,27 @@
+# MATLAB autosave & temp
+*.asv
+*.m~
+
+# MATLAB binaries
+*.mex*
+*.p
+*.slxc
+*.suo
+
+# Simulink cache & codegen
+slprj/
+codegen/
+
+# MATLAB projects
+*.prj.user
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Data (optional – adjust!)
+*.mat
+
+# MATLAB project internals (DO NOT TRACK)
+resources/project/
+*.prj.user
