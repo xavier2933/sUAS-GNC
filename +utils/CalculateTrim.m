@@ -5,7 +5,6 @@ function [aircraft_state_trim, control_surface_trim, fval] = CalculateTrim(trim_
         lb = [-45*pi/180; -45*pi/180; 0];
         ub = [ 45*pi/180;  45*pi/180; 1];
     else
-        phi_guess = 5 * pi/180;
         x0 = [2*pi/180; 0; 0.5; 0.08; 0; 0; 0];
         lb = [-2*pi; -2*pi; 0; -45*pi/180; -45*pi/180;-45*pi/180; -45*pi/180];
         ub = [ 2*pi;  2*pi;  1;  45*pi/180; 45*pi/180; 45*pi/180; 45*pi/180;];
@@ -17,6 +16,5 @@ function [aircraft_state_trim, control_surface_trim, fval] = CalculateTrim(trim_
 
     [optimal_vars, fval] = fmincon(cost_fun, x0, [], [], [], [], lb, ub, [], options)
 
-    [aircraft_state_trim, control_surface_trim] = ...
-        utils.TrimConditionFromDefinitionAndVariables(trim_definition, optimal_vars);
+    [aircraft_state_trim, control_surface_trim] = utils.TrimConditionFromDefinitionAndVariables(trim_definition, optimal_vars);
 end

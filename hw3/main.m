@@ -23,38 +23,38 @@ tspan = [t0 tf];
 
 
 % q1 good
-% vars = [18;0;1655];
+vars = [18;0;1655];
 % % 
-% [x0,u0] = utils.CalculateTrim(vars, params);
+[x0,u0] = utils.CalculateTrim(vars, params)
 % [t, x] = ode45(@(t, x) utils.AircraftEOM(t, x, u0, wind, params), tspan, x0);
 % ctrl = repmat(u0, 1, length(t));
 % 
 % utils.PlotSimulation(t,x',ctrl,'b')
 % 
 % q2
-% x1 = x0
-% w_b = utils.TransformFromInertialToBody([10;10;0], x1(4:6))
-% x1(7:9) = x1(7:9) + w_b;
-% 
-% [t, x] = ode45(@(t, x) utils.AircraftEOM(t, x, u0, [10;10;0], params), tspan, x1);
-% ctrl = repmat(u0, 1, length(t));
+x1 = x0
+w_b = utils.TransformFromInertialToBody([10;10;0], x1(4:6))
+x1(7:9) = x1(7:9) + w_b
+
+[t, x] = ode45(@(t, x) utils.AircraftEOM(t, x, u0, [10;10;0], params), tspan, x1);
+ctrl = repmat(u0, 1, length(t));
 % 
 % utils.PlotSimulation(t,x',ctrl,'r')
 % 
 % q3
-% vars = [18;deg2rad(10);1655];
-% [x2,u2] = utils.CalculateTrim(vars, params)
-% [t, x] = ode45(@(t, x) utils.AircraftEOM(t, x, u2, wind, params), tspan, x2);
-% ctrl = repmat(u2, 1, length(t));
+vars = [18;deg2rad(10);1655];
+[x2,u2] = utils.CalculateTrim(vars, params)
+[t, x] = ode45(@(t, x) utils.AircraftEOM(t, x, u2, wind, params), tspan, x2);
+ctrl = repmat(u2, 1, length(t));
 % 
 % utils.PlotSimulation(t,x',ctrl,'c')
 
 % q4 - check the trim vals
-vars = [19.9;0;200;500];
+vars = [20.0;0;200;500];
 
 [x3,u3] = utils.CalculateTrim(vars, params)
 [t, x] = ode45(@(t, x) utils.AircraftEOM(t, x, u3, [0;0;0], params), tspan, x3);
 ctrl = repmat(u3, 1, length(t));
-
-utils.PlotSimulation(t,x',ctrl,'r')
+% 
+% utils.PlotSimulation(t,x',ctrl,'r')
 
