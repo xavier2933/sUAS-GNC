@@ -16,7 +16,7 @@
 % If using this data for published work please reference:
 %
 % Jason Roadman, Jack Elston, Brian Argrow, and Eric W. Frew. 
-%   "Mission Performance of the Tempest UAS in Supercell Storms".” 
+%   "Mission Performance of the Tempest UAS in Supercell Storms".â€ 
 %   AIAA Journal of Aircraft, 2012.
 %
 %
@@ -146,20 +146,20 @@ function [aircraft_parameters] = ttwistor()
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Additional terms needed for linear models
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % inertia_terms = InertiaTerms(aircraft_parameters);
-    % 
-    % aircraft_parameters.Cp0 = inertia_terms(3)*aircraft_parameters.Cl0 + inertia_terms(4)*aircraft_parameters.Cn0;
-    % aircraft_parameters.Cpbeta = inertia_terms(3)*aircraft_parameters.Clbeta + inertia_terms(4)*aircraft_parameters.Cnbeta;
-    % aircraft_parameters.Cpp = inertia_terms(3)*aircraft_parameters.Clp + inertia_terms(4)*aircraft_parameters.Cnp;
-    % aircraft_parameters.Cpr = inertia_terms(3)*aircraft_parameters.Clr + inertia_terms(4)*aircraft_parameters.Cnr;
-    % aircraft_parameters.Cpda = inertia_terms(3)*aircraft_parameters.Clda + inertia_terms(4)*aircraft_parameters.Cnda;
-    % aircraft_parameters.Cpdr = inertia_terms(3)*aircraft_parameters.Cldr + inertia_terms(4)*aircraft_parameters.Cndr;
-    % 
-    % aircraft_parameters.Cr0 = inertia_terms(4)*aircraft_parameters.Cl0 + inertia_terms(8)*aircraft_parameters.Cn0;
-    % aircraft_parameters.Crbeta = inertia_terms(4)*aircraft_parameters.Clbeta + inertia_terms(8)*aircraft_parameters.Cnbeta;
-    % aircraft_parameters.Crp = inertia_terms(4)*aircraft_parameters.Clp + inertia_terms(8)*aircraft_parameters.Cnp;
-    % aircraft_parameters.Crr = inertia_terms(4)*aircraft_parameters.Clr + inertia_terms(8)*aircraft_parameters.Cnr;
-    % aircraft_parameters.Crda = inertia_terms(4)*aircraft_parameters.Clda + inertia_terms(8)*aircraft_parameters.Cnda;
-    % aircraft_parameters.Crdr = inertia_terms(4)*aircraft_parameters.Cldr + inertia_terms(8)*aircraft_parameters.Cndr;
+    inertia_terms = utils.InertiaTerms(aircraft_parameters);
+
+    aircraft_parameters.Cp0 = inertia_terms(3)*aircraft_parameters.Cl0 + inertia_terms(4)*aircraft_parameters.Cn0;
+    aircraft_parameters.Cpbeta = inertia_terms(3)*aircraft_parameters.Clbeta + inertia_terms(4)*aircraft_parameters.Cnbeta;
+    aircraft_parameters.Cpp = inertia_terms(3)*aircraft_parameters.Clp + inertia_terms(4)*aircraft_parameters.Cnp;
+    aircraft_parameters.Cpr = inertia_terms(3)*aircraft_parameters.Clr + inertia_terms(4)*aircraft_parameters.Cnr;
+    aircraft_parameters.Cpda = inertia_terms(3)*aircraft_parameters.Clda + inertia_terms(4)*aircraft_parameters.Cnda;
+    aircraft_parameters.Cpdr = inertia_terms(3)*aircraft_parameters.Cldr + inertia_terms(4)*aircraft_parameters.Cndr;
+
+    aircraft_parameters.Cr0 = inertia_terms(4)*aircraft_parameters.Cl0 + inertia_terms(8)*aircraft_parameters.Cn0;
+    aircraft_parameters.Crbeta = inertia_terms(4)*aircraft_parameters.Clbeta + inertia_terms(8)*aircraft_parameters.Cnbeta;
+    aircraft_parameters.Crp = inertia_terms(4)*aircraft_parameters.Clp + inertia_terms(8)*aircraft_parameters.Cnp;
+    aircraft_parameters.Crr = inertia_terms(4)*aircraft_parameters.Clr + inertia_terms(8)*aircraft_parameters.Cnr;
+    aircraft_parameters.Crda = inertia_terms(4)*aircraft_parameters.Clda + inertia_terms(8)*aircraft_parameters.Cnda;
+    aircraft_parameters.Crdr = inertia_terms(4)*aircraft_parameters.Cldr + inertia_terms(8)*aircraft_parameters.Cndr;
     
 end
