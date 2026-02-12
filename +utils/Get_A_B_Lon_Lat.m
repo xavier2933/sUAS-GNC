@@ -4,7 +4,7 @@ function [Alon, Blon, Alat, Blat] = Get_A_B_Lon_Lat(trim_def, params)
     Alat = [3];
     Blat = [4];
 
-    [x, u] = utils.CalculateTrim(trim_def, params)
+    [x, u] = utils.CalculateTrim(trim_def, params);
     aircraft_state    = x(:);
     aircraft_surfaces = u(:);
     wind_inertial     = [0;0;0];
@@ -38,7 +38,7 @@ function [Alon, Blon, Alat, Blat] = Get_A_B_Lon_Lat(trim_def, params)
     V_a_b = V_e_b - wind_body;
     %V_a_b = utils.TransformFromInertialToBody(V_a_e', angles);
     wind_angle_vec = utils.AirRelativeVelocityVectorToWindAngles(V_a_b);
-    V_a = wind_angle_vec(1)
+    V_a = wind_angle_vec(1);
     beta = wind_angle_vec(2);
     alpha = wind_angle_vec(3);
 

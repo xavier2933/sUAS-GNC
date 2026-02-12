@@ -14,7 +14,7 @@ function [aircraft_state_trim, control_surface_trim, fval] = CalculateTrim(trim_
 
     options = optimoptions('fmincon', 'OptimalityTolerance', 1e-8, 'StepTolerance', 1e-8);
 
-    [optimal_vars, fval] = fmincon(cost_fun, x0, [], [], [], [], lb, ub, [], options)
+    [optimal_vars, fval] = fmincon(cost_fun, x0, [], [], [], [], lb, ub, [], options);
 
     [aircraft_state_trim, control_surface_trim] = utils.TrimConditionFromDefinitionAndVariables(trim_definition, optimal_vars);
 end
