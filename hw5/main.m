@@ -65,12 +65,13 @@ x_lin_full = repmat(x0, 1, length(t_lin));
 % NEW: Compute X position by integrating (V_trim + delta_u)
 % cumtrapz performs numerical integration over the time vector
 V_trim = x0(7); 
+x0_nonlin(9)  = x0(9)  + (V_trim * x_pert0(2)); % Convert alpha to w
 delta_u = y_lin(:,1)';
 x_lin_full(1,:) = x0(1) + cumtrapz(t_lin, V_trim + delta_u);
 
 % Existing mappings
 x_lin_full(7,:)  = x0(7)  + y_lin(:,1)'; % u
-x_lin_full(9,:)  = x0(9)  + y_lin(:,2)'; % w
+x_lin_full(9,:) = x0(9) + (V_trim * y_lin(:,2)');
 x_lin_full(11,:) = x0(11) + y_lin(:,3)'; % q
 x_lin_full(5,:)  = x0(5)  + y_lin(:,4)'; % theta
 x_lin_full(3,:)  = x0(3)  - y_lin(:,5)'; % Pd = trim_Pd - delta_h
