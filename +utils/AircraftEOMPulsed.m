@@ -1,14 +1,19 @@
-function [xdot] = AircraftEOMPulsed(time, aircraft_state, aircraft_surfaces, wind_inertial, aircraft_parameters)
-    
+function [xdot] = AircraftEOMPulsed(time, aircraft_state, aircraft_surfaces, wind_inertial, aircraft_parameters, control_index, pulse_magnitude, doublet)
+    % control_index: idx of control to actuate
+    % pulse magnitude [deg] amount to deflect
     if time < 1
-        del_pulse = 1;
+        del_pulse = deg2rad(pulse_magnitude);
+    
+    elseif time > 1 && time < 2 && doublet == true
+        del_pulse = -deg2rad(pulse_magnitude);
+    
     else
         del_pulse = 0;
     end
 
     aircraft_state    = aircraft_state(:);
     aircraft_surfaces = aircraft_surfaces(:);
-    aircraft_surfaces(1) = aircraft_surfaces(1) + del_pulse;
+    aircraft_surfaces(control_index) = aircraft_surfaces(control_index) + del_pulse;
     wind_inertial     = wind_inertial(:);
     angles = [aircraft_state(4); aircraft_state(5); aircraft_state(6)];
     V_e_b = [aircraft_state(7); aircraft_state(8); aircraft_state(9)];

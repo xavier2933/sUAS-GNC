@@ -3,6 +3,7 @@ addpath('..');
 
 vars = [18;0;1800];
 params = utils.ttwistor();
+time = 25; % seconds
 
 [x0,u0] = utils.CalculateTrim(vars, params)
 [Alon, Blon, Alat, Blat] = utils.Get_A_B_Lon_Lat(vars,params);
@@ -12,12 +13,12 @@ eigenvalues = diag(eval_lon_diag);
 
 
 complex_indices = find(imag(eigenvalues) > 0.01);
-[~, min_idx] = min(abs(eigenvalues(complex_indices)));
+[~, min_idx] = max(abs(eigenvalues(complex_indices)));
 phugoid_idx = complex_indices(min_idx);
 
-v_phugoid = evec_lon(:, phugoid_idx);
+v_phugoid = evec_lon(:, phugoid_idx)
 theta_idx = 4; 
-target_theta_rad = deg2rad(40);
+target_theta_rad = deg2rad(2);
 
 scale_factor = target_theta_rad / v_phugoid(theta_idx);
 v_scaled = real(v_phugoid * scale_factor);
@@ -40,7 +41,7 @@ w_bar = (Va_star * cos(alpha_star)) * alpha_bar;
 sys_lon = ss(Alon, zeros(5,1), eye(5), zeros(5,1));
 
 % Simulate the response to the initial perturbation
-[y_lin_perturbation, t_lin] = initial(sys_lon, v_scaled, 250);
+[y_lin_perturbation, t_lin] = initial(sys_lon, v_scaled, time);
 
 x_lin_full = repmat(x0, 1, length(t_lin));
 
@@ -59,7 +60,6 @@ delta_x_lin = cumtrapz(t_lin, u_lin_total);
 x_lin_full(1, :) = x0(1) + delta_x_lin;
 
 u_lin = repmat(u0, 1, length(t_lin));
-utils.PlotSimulation(t_lin, x_lin_full, u_lin, 'r');
 
 
 x0_sim = x0;
@@ -71,10 +71,11 @@ x0_sim(5)  = theta_star + theta_bar; % Total theta
 x0_sim(3)  = x0(3) - h_bar;
 
 options = odeset('MaxStep', 0.1);
-[t_nonlin, x_nonlin_raw] = ode45(@(t, x) utils.AircraftEOM(t, x, u0, [0;0;0], params), [0 250], x0_sim, options);
+[t_nonlin, x_nonlin_raw] = ode45(@(t, x) utils.AircraftEOM(t, x, u0, [0;0;0], params), [0 time], x0_sim, options);
 x_nonlin = x_nonlin_raw'; 
 
 u_nonlin = repmat(u0, 1, length(t_nonlin));
 
+utils.PlotSimulation(t_lin, x_lin_full, u_lin, 'r');
 utils.PlotSimulation(t_nonlin, x_nonlin, u_nonlin, 'b'); 
 
