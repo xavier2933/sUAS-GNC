@@ -3,7 +3,7 @@ addpath('..');
 
 vars = [18;0;1800];
 params = utils.ttwistor();
-time = 15; % seconds
+time = 150; % seconds
 control_idx = 2;
 pulse_val = 10;
 doublet = true;

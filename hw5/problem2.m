@@ -1,3 +1,5 @@
+% phugoid/sp for problem 2
+
 clear, clc, close all
 addpath('..');
 

@@ -1,3 +1,4 @@
+% Q1 short period
 clear, clc, close all
 addpath('..');
 
@@ -40,7 +41,6 @@ w_bar = (Va_star * cos(alpha_star)) * alpha_bar;
 
 sys_lon = ss(Alon, zeros(5,1), eye(5), zeros(5,1));
 
-% Simulate the response to the initial perturbation
 [y_lin_perturbation, t_lin] = initial(sys_lon, v_scaled, time);
 
 x_lin_full = repmat(x0, 1, length(t_lin));
