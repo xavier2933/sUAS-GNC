@@ -109,15 +109,15 @@ plot3(aircraft_state_array(1,ind_f),aircraft_state_array(2,ind_f),-aircraft_stat
 for i=1:ind_f
 
     wind_inertial = background_wind_array(1:3,i);
-    wind_body = TransformFromInertialToBody(wind_inertial, aircraft_state_array(4:6,i));
+    wind_body = utils.TransformFromInertialToBody(wind_inertial, aircraft_state_array(4:6,i));
     air_rel_body = aircraft_state_array(7:9,i) - wind_body;
-    wind_angles = AirRelativeVelocityVectorToWindAngles(air_rel_body);
+    wind_angles = utils.AirRelativeVelocityVectorToWindAngles(air_rel_body);
     
     Va(i) = wind_angles(1);
     beta(i) = wind_angles(2)*180/pi;
     alpha(i) = wind_angles(3)*180/pi;
     
-    [flight_angles] = FlightPathAnglesFromState(aircraft_state_array(1:12,i));
+    [flight_angles] = utils.FlightPathAnglesFromState(aircraft_state_array(1:12,i));
     chi(i) = 180/pi*flight_angles(2);
     gamma(i) = 180/pi*flight_angles(3);
 end

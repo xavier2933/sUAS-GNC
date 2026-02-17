@@ -14,7 +14,7 @@ clear, clc, close all
 addpath('..');
 
 %%% Aircraft parameter file
-aircraft_parameters = utils.ttwistor()
+aircraft_parameters = utils.ttwistor();
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,8 +28,8 @@ trim_definition = [V_trim; gamma_trim; h_trim];
 
 
 %%% STUDENTS REPLACE THESE TWO FUNCTIONS WITH YOUR VERSIONS FROM HW 3
-[trim_variables, fval] = utils.CalculateTrim(trim_definition, aircraft_parameters)
-[aircraft_state_trim, control_input_trim] = utils.TrimConditionFromDefinitionAndVariables(trim_variables, trim_definition);
+[aircraft_state_trim, control_input_trim, trim_variables, fval] = utils.CalculateTrim(trim_definition, aircraft_parameters);
+%[aircraft_state_trim, control_input_trim] = utils.TrimConditionFromDefinitionAndVariables(trim_variables, trim_definition);
 
 
 
@@ -39,7 +39,7 @@ trim_definition = [V_trim; gamma_trim; h_trim];
 
 %%% STUDENTS MUST COMPLETE THIS FUNCTION. A SKELETON OF THE FUNCTION IS PROVIDED
 
-[control_gain_struct, linear_terms] = CalculateControlGainsSimpleSLC_Nondim_Ttwistor2(aircraft_parameters, trim_definition, trim_variables)
+[control_gain_struct, linear_terms] = frewhw6utils.CalculateControlGainsSimpleSLC_Nondim_Ttwistor(aircraft_parameters, trim_definition, trim_variables)
 control_gain_struct.u_trim = control_input_trim;
 
 
@@ -104,9 +104,9 @@ for i=1:n_ind
 
     wind_array(:,i) = wind_inertial;
 
-    wind_body = TransformFromInertialToBody(wind_inertial, aircraft_array(4:6,i));
+    wind_body = utils.TransformFromInertialToBody(wind_inertial, aircraft_array(4:6,i));
     air_rel_vel_body = aircraft_array(7:9,i) - wind_body;
-    wind_angles(:,i) = WindAnglesFromVelocityBody(air_rel_vel_body);
+    wind_angles(:,i) = utils.AirRelativeVelocityVectorToWindAngles(air_rel_vel_body);
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,7 +126,7 @@ for i=1:n_ind
     % Autopilot
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    [control_slc, x_c_slc] = SimpleSLCAutopilot(Ts*(i-1), aircraft_array(:,i), wind_angles(:,i), control_objectives, control_gain_struct);
+    [control_slc, x_c_slc] = frewhw6utils.SimpleSLCAutopilot(Ts*(i-1), aircraft_array(:,i), wind_angles(:,i), control_objectives, control_gain_struct);
 
     control_array(:,i) = control_slc;
     x_command(:,i) = x_c_slc;
@@ -136,7 +136,7 @@ for i=1:n_ind
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Aircraft dynamics
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [TOUT2,YOUT2] = ode45(@(t,y) AircraftEOM(t,y,control_array(:,i),wind_inertial,aircraft_parameters),TSPAN,aircraft_array(:,i),[]);
+    [TOUT2,YOUT2] = ode45(@(t,y) utils.AircraftEOM(t,y,control_array(:,i),wind_inertial,aircraft_parameters),TSPAN,aircraft_array(:,i),[]);
 
 
     aircraft_array(:,i+1) = YOUT2(end,:)';
@@ -151,7 +151,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Plotting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-PlotSimulationWithCommands(time_iter,aircraft_array,control_array, wind_array, x_command, 'b')
+frewhw6utils.PlotSimulationWithCommands(time_iter,aircraft_array,control_array, wind_array, x_command, 'b')
 
 %PlotSimulation(time_iter,aircraft_array,control_array, wind_array,'b')
 

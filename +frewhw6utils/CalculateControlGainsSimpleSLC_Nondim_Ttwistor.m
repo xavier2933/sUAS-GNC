@@ -10,7 +10,7 @@ function [control_gains, linear_terms]=CalculateControlGainsSimpleSLC_Nondim_Ttw
 g=aircraft_parameters.g;
 control_gains.g=g;
 
-density = stdatmo(trim_definition(3));
+density = utils.stdatmo(trim_definition(3));
 Va = trim_definition(1);
 
 %%%%%%%%

@@ -1,4 +1,4 @@
-function [aircraft_state_trim, control_surface_trim, fval] = CalculateTrim(trim_definition, params)
+function [aircraft_state_trim, control_surface_trim, optimal_vars, fval] = CalculateTrim(trim_definition, params)
 
     if length(trim_definition) == 3
         x0 = [0;0;0.2];

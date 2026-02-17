@@ -25,7 +25,7 @@ function [control_input, x_command] = SimpleSLCAutopilot(time, aircraft_state, w
     psi      = euler_angles(3,1);  % yaw angle
     
 
-    flight_angles   = FlightPathAnglesFromState(aircraft_state); %[Vg, chi, gamma]
+    flight_angles   = utils.FlightPathAnglesFromState(aircraft_state); %[Vg, chi, gamma]
     chi = flight_angles(2,1);
 
 
