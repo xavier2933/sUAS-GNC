@@ -50,11 +50,17 @@ control_gain_struct.u_trim = control_input_trim;
 %%% Note, STUDENTS may need to change these while tuning the autopilot.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-h_c         = h_trim;  % commanded altitude (m)
+% h_c         = h_trim;  % commanded altitude (m)
+% h_dot_c     = 0;  % commanded altitude rate (m)
+% chi_c       = 40*pi/180;  % commanded course (rad)
+% chi_dot_ff  = 0;  % commanded course rate (rad)   
+% Va_c        = V_trim;  % commanded airspeed (m/s)
+
+h_c         = 1805;  % commanded altitude (m)
 h_dot_c     = 0;  % commanded altitude rate (m)
 chi_c       = 40*pi/180;  % commanded course (rad)
 chi_dot_ff  = 0;  % commanded course rate (rad)   
-Va_c        = V_trim;  % commanded airspeed (m/s)
+Va_c        = 18  % commanded airspeed (m/s)
     
 
 
