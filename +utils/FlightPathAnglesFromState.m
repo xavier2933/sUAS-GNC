@@ -17,7 +17,7 @@ function [flight_angles] = FlightPathAnglesFromState(aircraft_state)
     w_e = res(3);
 
     V_g = sqrt(u_e^2 + v_e^2 + w_e^2);
-    chi = atan2(u_e, v_e);
+    chi = -atan2(v_e, u_e);
     gamma = atan2(w_e, sqrt(u_e^2 + v_e^2));
 
     flight_angles = [V_g;chi;gamma];
