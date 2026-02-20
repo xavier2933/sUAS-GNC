@@ -93,7 +93,7 @@ wind_inertial = [0;0;0];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Ts = .1;
-Tfinal = 100;
+Tfinal = 500;
 control_gain_struct.Ts=Ts;
 
 %%% iterate at control sample time
