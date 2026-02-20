@@ -60,7 +60,7 @@ h_c         = 1805;  % commanded altitude (m)
 h_dot_c     = 0;  % commanded altitude rate (m)
 chi_c       = 40*pi/180;  % commanded course (rad)
 chi_dot_ff  = 0;  % commanded course rate (rad)   
-Va_c        = 18  % commanded airspeed (m/s)
+Va_c        = 18;  % commanded airspeed (m/s)
     
 
 

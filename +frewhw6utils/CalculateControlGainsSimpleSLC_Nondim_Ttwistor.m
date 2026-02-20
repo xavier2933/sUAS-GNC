@@ -46,7 +46,7 @@ den_phi2 = [1 a_phi1+a_phi2*control_gains.Kd_roll a_phi2*control_gains.Kp_roll a
 
 %%%%%%%
 % course hold gains
-wn_chi = (1/20)*wn_roll; %%%<---------- STUDENT SELECT
+wn_chi = (1/22)*wn_roll; %%%<---------- STUDENT SELECT
 zeta_chi = 1.2; %%%<---------- STUDENT SELECT
 
 control_gains.Kp_course = 2*zeta_chi*wn_chi*Va/g;
@@ -74,7 +74,7 @@ wn_beta = sqrt(a_beta2*control_gains.Ki_beta);
 %%%%%%%%
 % pitch hold
 e_theta_max = 2*control_gains.max_pitch; % used by saturation method to select proportional gain, assume never give step commanded of greater than full pitch limit
-zeta_pitch = 0.8; %%%<---------- STUDENT SELECT
+zeta_pitch = 1.10; %%%<---------- STUDENT SELECT
 
 a_theta1 = -density*Va*aircraft_parameters.c*aircraft_parameters.S*aircraft_parameters.Cmq*aircraft_parameters.c/(4*aircraft_parameters.Iy);
 a_theta2 = -density*Va*Va*aircraft_parameters.c*aircraft_parameters.S*aircraft_parameters.Cmalpha/(2*aircraft_parameters.Iy);
@@ -89,7 +89,7 @@ control_gains.Kd_pitch = (2*zeta_pitch*wn_pitch - a_theta1)/a_theta3;
 % height hold
 Kpitch_DC = a_theta3*control_gains.Kp_pitch/(a_theta3*control_gains.Kp_pitch+a_theta2);
 wn_height = (1/20)*wn_pitch; %%%<---------- STUDENT SELECT
-zeta_height = 1.5; %%%<---------- STUDENT SELECT
+zeta_height = 1.1; %%%<---------- STUDENT SELECT
 
 control_gains.Kp_height = 2*zeta_height*wn_height/(Kpitch_DC*Va);
 control_gains.Ki_height = wn_height*wn_height/(Kpitch_DC*Va);
@@ -121,8 +121,8 @@ a_v1 = (density*Va*aircraft_parameters.S/aircraft_parameters.m)*(CDtrim) - ...
 a_v2 = density*aircraft_parameters.Sprop*aircraft_parameters.Cprop*((2*dt-1)*Va*Va + (aircraft_parameters.kmotor-4*aircraft_parameters.kmotor*dt)*Va + ...
        2*aircraft_parameters.kmotor*aircraft_parameters.kmotor*dt)/aircraft_parameters.m;
 
-wn_airspeed = (1/20)*wn_pitch; %%%<---------- STUDENT SELECT
-zeta_airspeed = 0.9; %%%<---------- STUDENT SELECT
+wn_airspeed = (1/10)*wn_pitch; %%%<---------- STUDENT SELECT
+zeta_airspeed = 1.1; %%%<---------- STUDENT SELECT
 
 control_gains.Kp_speed_pitch = (a_v1 - 2*zeta_airspeed*wn_airspeed)/(Kpitch_DC*aircraft_parameters.g);
 control_gains.Ki_speed_pitch = -wn_airspeed*wn_airspeed/(Kpitch_DC*aircraft_parameters.g);
@@ -130,7 +130,7 @@ control_gains.Ki_speed_pitch = -wn_airspeed*wn_airspeed/(Kpitch_DC*aircraft_para
 %%%%%%%%%
 % airspeed (from throttle)
 wn_airspeed = (1/20)*wn_pitch; %%%<---------- STUDENT SELECT
-zeta_airspeed = 0.9; %%%<---------- STUDENT SELECT
+zeta_airspeed = 1.1; %%%<---------- STUDENT SELECT
 control_gains.Kp_speed_throttle = (2*zeta_airspeed*wn_airspeed-a_v1)/a_v2;
 control_gains.Ki_speed_throttle = wn_airspeed*wn_airspeed/a_v2;
 
