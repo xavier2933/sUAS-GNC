@@ -14,7 +14,7 @@ function [control_input, x_command] = SLCWithFeedForwardAutopilot(time, aircraft
     velocity_body   = aircraft_state(7:9,1); %[u v w]
     omega_body      = aircraft_state(10:12,1); %[p q r]
     
-    flight_angles   = FlightPathAnglesFromState(aircraft_state); %[Vg, chi, gamma]
+    flight_angles   = utils.FlightPathAnglesFromState(aircraft_state); %[Vg, chi, gamma]
     chi = flight_angles(2,1);
     
     

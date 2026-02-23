@@ -118,7 +118,7 @@ time_iter(1) = 0;
     
 
 % STUDENTS Complete FirstOrderOrbitGuidance.m
-[TOUTfirst,YOUTfirst] = ode45(@(t,y) FirstOrderOrbitGuidance(t, y, orbit_speed, orbit_radius, orbit_center, orbit_flag, orbit_gains),[0:.1:Tfinal],[0; 0; -h_trim],[]);
+[TOUTfirst,YOUTfirst] = ode45(@(t,y) hw7utils.FirstOrderOrbitGuidance(t, y, orbit_speed, orbit_radius, orbit_center, orbit_flag, orbit_gains),[0:.1:Tfinal],[0; 0; -h_trim],[]);
 
 figure(20);
 plot3(YOUTfirst(:,1), YOUTfirst(:,2), -YOUTfirst(:,3));hold on;
