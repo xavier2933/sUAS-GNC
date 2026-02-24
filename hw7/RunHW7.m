@@ -6,7 +6,8 @@
 % This is a helper that students can use to complete HW 7. 
 %
 %
-
+clear;
+clc;
 close all;% <========= Comment out this line and you can run this file multiple times and plot results together
 clear all; 
 
@@ -68,7 +69,7 @@ orbit_speed = 18;
 orbit_radius = 200;
 orbit_center = [1000;1000;-1805];
 orbit_flag=1;
-orbit_gains.kr = .01; %<------- STUDENTS set this gain if needed
+orbit_gains.kr = .6; %<------- STUDENTS set this gain if needed
 orbit_gains.kz = .001; %<------- STUDENTS set this gain if needed
 
 
@@ -119,8 +120,7 @@ time_iter(1) = 0;
 
 % STUDENTS Complete FirstOrderOrbitGuidance.m
 [TOUTfirst,YOUTfirst] = ode45(@(t,y) hw7utils.FirstOrderOrbitGuidance(t, y, orbit_speed, orbit_radius, orbit_center, orbit_flag, orbit_gains),[0:.1:Tfinal],[0; 0; -h_trim],[]);
-
-figure(20);
+figure;
 plot3(YOUTfirst(:,1), YOUTfirst(:,2), -YOUTfirst(:,3));hold on;
 for c = 1:361
     circ_pos(:,c) = orbit_center + orbit_radius*[cos(c*pi/180); sin(c*pi/180); 0];
@@ -128,7 +128,7 @@ end
 plot3(circ_pos(1,:), circ_pos(2,:), -circ_pos(3,:),'--')
 
 
-
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Simulate full system
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
