@@ -6,9 +6,7 @@
 % This is a helper that students can use to complete HW 7. 
 %
 %
-clear;
-clc;
-close all;% <========= Comment out this line and you can run this file multiple times and plot results together
+%close all;% <========= Comment out this line and you can run this file multiple times and plot results together
 clear all; 
 
 addpath('..');
@@ -20,7 +18,7 @@ FEED = 1;
 
 %%% Set flags
 ANIMATE_FLAG = 0; % <========= Set to 1 to show animation after simulation
-CONTROL_FLAG = FEED; % <========= Set to control law to use (SLC or FEED)
+CONTROL_FLAG = SLC; % <========= Set to control law to use (SLC or FEED)
 
 
 %%% Aircraft parameter file
@@ -69,8 +67,8 @@ orbit_speed = 18;
 orbit_radius = 200;
 orbit_center = [1000;1000;-1805];
 orbit_flag=1;
-orbit_gains.kr = 2.0; %<------- STUDENTS set this gain if needed
-orbit_gains.kz = .05; %<------- STUDENTS set this gain if needed
+orbit_gains.kr = 1.5; %<------- STUDENTS set this gain if needed
+orbit_gains.kz = 0.05; %<------- STUDENTS set this gain if needed
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -147,18 +145,18 @@ for i=1:n_ind
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Guidance level commands
     %%%
-    control_objectives(1) = 1805;
-    control_objectives(2) = 0;
-    control_objectives(3) = 0;
-    control_objectives(4) = 18/600;
-    control_objectives(5) = 18;
+    % control_objectives(1) = 1805;
+    % control_objectives(2) = 0;
+    % control_objectives(3) = 0;
+    % control_objectives(4) = 18/600;
+    % control_objectives(5) = 18;
     %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % STUDENTS WRITE THIS FUNCTION
-    %control_objectives = hw7utils.OrbitGuidance(aircraft_array(1:3,i), orbit_speed, orbit_radius, orbit_center, orbit_flag, orbit_gains); 
+    control_objectives = hw7utils.OrbitGuidance(aircraft_array(1:3,i), orbit_speed, orbit_radius, orbit_center, orbit_flag, orbit_gains); 
 
-    control_gain_struct.Kp_course_rate=0; %<============== Uncomment if your guidance algorithm does not give a command course angle, i.e. only gives commanded course rate
+    %control_gain_struct.Kp_course_rate=0.0; %<============== Uncomment if your guidance algorithm does not give a command course angle, i.e. only gives commanded course rate
     control_gain_struct.Kff_course_rate = 1.0; %<============== Uncomment if your guidance algorithm does not give a command course rate
 
     %control_objectives = [100; 0; 45*pi/180; 0; V_trim]; %<============== Comment out when OrbitGuidance is complete
