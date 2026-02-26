@@ -147,19 +147,19 @@ for i=1:n_ind
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Guidance level commands
     %%%
-    % control_objectives(1) = 1805;
-    % control_objectives(2) = 0;
-    % control_objectives(3) = 0;
-    % control_objectives(4) = 18/600;
-    % control_objectives(5) = 18;
+    control_objectives(1) = 1805;
+    control_objectives(2) = 0;
+    control_objectives(3) = 0;
+    control_objectives(4) = 18/600;
+    control_objectives(5) = 18;
     %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % STUDENTS WRITE THIS FUNCTION
-    control_objectives = hw7utils.OrbitGuidance(aircraft_array(1:3,i), orbit_speed, orbit_radius, orbit_center, orbit_flag, orbit_gains); 
+    %control_objectives = hw7utils.OrbitGuidance(aircraft_array(1:3,i), orbit_speed, orbit_radius, orbit_center, orbit_flag, orbit_gains); 
 
-    % control_gain_struct.Kp_course_rate=0; %<============== Uncomment if your guidance algorithm does not give a command course angle, i.e. only gives commanded course rate
-    control_gain_struct.Kff_course_rate = 0; %<============== Uncomment if your guidance algorithm does not give a command course rate
+    control_gain_struct.Kp_course_rate=0; %<============== Uncomment if your guidance algorithm does not give a command course angle, i.e. only gives commanded course rate
+    control_gain_struct.Kff_course_rate = 1.0; %<============== Uncomment if your guidance algorithm does not give a command course rate
 
     %control_objectives = [100; 0; 45*pi/180; 0; V_trim]; %<============== Comment out when OrbitGuidance is complete
 
