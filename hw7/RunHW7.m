@@ -32,7 +32,7 @@ aircraft_parameters = utils.ttwistor();
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 V_trim = 18;
-h_trim = 1805;
+h_trim = 1655;
 gamma_trim = 0;
 trim_definition = [V_trim; gamma_trim; h_trim];
 
@@ -69,8 +69,8 @@ orbit_speed = 18;
 orbit_radius = 200;
 orbit_center = [1000;1000;-1805];
 orbit_flag=1;
-orbit_gains.kr = .6; %<------- STUDENTS set this gain if needed
-orbit_gains.kz = .001; %<------- STUDENTS set this gain if needed
+orbit_gains.kr = 2.0; %<------- STUDENTS set this gain if needed
+orbit_gains.kz = .05; %<------- STUDENTS set this gain if needed
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -147,21 +147,21 @@ for i=1:n_ind
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Guidance level commands
     %%%
-    %%%   control_objectives(1) = h_c;
-    %%%   control_objectives(2) = h_dot_c;
-    %%%   control_objectives(3) = chi_c;
-    %%%   control_objectives(4) = chi_dot_ff;
-    %%%   control_objectives(5) = Va_c;
+    % control_objectives(1) = 1805;
+    % control_objectives(2) = 0;
+    % control_objectives(3) = 0;
+    % control_objectives(4) = 18/600;
+    % control_objectives(5) = 18;
     %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % STUDENTS WRITE THIS FUNCTION
-    % control_objectives = OrbitGuidance(aircraft_array(1:3,i), orbit_speed, orbit_radius, orbit_center, orbit_flag, orbit_gains); 
+    control_objectives = hw7utils.OrbitGuidance(aircraft_array(1:3,i), orbit_speed, orbit_radius, orbit_center, orbit_flag, orbit_gains); 
 
     % control_gain_struct.Kp_course_rate=0; %<============== Uncomment if your guidance algorithm does not give a command course angle, i.e. only gives commanded course rate
-    % control_gain_struct.Kff_course_rate = 0; %<============== Uncomment if your guidance algorithm does not give a command course rate
+    control_gain_struct.Kff_course_rate = 0; %<============== Uncomment if your guidance algorithm does not give a command course rate
 
-    control_objectives = [100; 0; 45*pi/180; 0; V_trim]; %<============== Comment out when OrbitGuidance is complete
+    %control_objectives = [100; 0; 45*pi/180; 0; V_trim]; %<============== Comment out when OrbitGuidance is complete
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Autopilot
