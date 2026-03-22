@@ -63,7 +63,7 @@ load(gains_file)
 %%% Note, STUDENTS may need to change these while tuning the autopilot.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-pos_line = [300;0;-h_trim];
+pos_line = [300;400;-h_trim];
 dir_line = [sqrt(2)/2;8*sqrt(2)/2;0];
 dir_line = dir_line / norm(dir_line);
 kpath = 0.01;
@@ -77,7 +77,7 @@ des_line = [pos_line-1000*dir_line, pos_line + 8000*dir_line];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 aircraft_state0 = aircraft_state_trim;
 
-aircraft_state0(3,1) = -1805; %<------- CLIMB mode starts when aircraft reaches h = 1675
+aircraft_state0(3,1) = -1705; %<------- CLIMB mode starts when aircraft reaches h = 1675
 aircraft_state0(4,1) = 0*pi/180;
 
 control_input0 = control_input_trim;
@@ -270,7 +270,7 @@ for i=1:n_ind
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % STUDENTS WRITE THIS FUNCTION
-    %control_objectives = hw7utils.OrbitGuidance(aircraft_array(1:3,i), orbit_speed, orbit_radius, orbit_center, orbit_flag, orbit_gains); 
+    control_objectives = utils.StraightLineGuidance(pos_line, dir_line, aircraft_array(1:3,i), kpath, chi_inf, V_trim); 
 
     %control_gain_struct.Kp_course_rate=0.0; %<============== Uncomment if your guidance algorithm does not give a command course angle, i.e. only gives commanded course rate
     %control_gain_struct.Kff_course_rate = 1.0; %<============== Uncomment if your guidance algorithm does not give a command course rate
@@ -305,92 +305,68 @@ for i=1:n_ind
     x_command(:,i+1) = x_command(:,i);
 end
 
-%% --- Comparison Plotting ---
-% 1. Recalculate chi and Va for the full system (since they aren't raw states)
-n_samples = size(aircraft_array, 2);
-chi_full = zeros(1, n_samples);
-Va_full  = zeros(1, n_samples);
+%% --- Comparison Plots (Fidelity: First-Order vs Kinematic vs Full EOM) ---
 
-for k = 1:n_samples
-    % Get Flight Path Angles (contains chi)
-    [flight_angles] = utils.FlightPathAnglesFromState(aircraft_array(:,k));
-    chi_full(k) = flight_angles(2); % Chi is the 2nd output
-    
-    % Get Airspeed (Va)
-    wind_body = utils.TransformFromInertialToBody(wind_inertial, aircraft_array(4:6,k));
-    air_rel_body = aircraft_array(7:9,k) - wind_body;
-    wind_angles = utils.AirRelativeVelocityVectorToWindAngles(air_rel_body);
-    Va_full(k) = wind_angles(1);
-end
+% --- Figure 8: 3D Path ---
+figure(8); hold on;
+% Full System Plot (Indices: 1=Pn, 2=Pe, 3=Pd)
+% Note: We use -aircraft_array(3,:) because Pd is Down and we want Height
+plot3(aircraft_array(1,:), aircraft_array(2,:), -aircraft_array(3,:), 'b', 'LineWidth', 1.5);
+legend('Desired Line', 'First-Order', 'Kinematic Guidance', 'Full EOM');
+grid on; view(3);
 
-% 2. Plot onto the existing Guidance Figure
-% (Assuming the figure you created earlier is still the active one or use figure(1))
-figure(1); 
+% --- Figure 20: Position vs Time ---
+figure(20);
+subplot(311); hold on;
+plot(time_iter, aircraft_array(1,:), 'b');
+ylabel('X pos (N)')
 
-% Subplot 1: Course (chi)
-subplot(311);
-plot(time_iter, chi_full, 'b-', 'LineWidth', 1.5); % Full system in solid blue
-ylabel('\chi [rad]');
-legend('Kinematic', 'Full System');
+subplot(312); hold on;
+plot(time_iter, aircraft_array(2,:), 'b');
+ylabel('Y pos (E)')
 
-% Subplot 2: Altitude (h)
-subplot(312);
-% Note: aircraft_array(3,:) is negative altitude (Down), so we negate it
-plot(time_iter, -aircraft_array(3,:), 'b-', 'LineWidth', 1.5); 
-ylabel('h [m]');
+subplot(313); hold on;
+% Plotting Height (Negative of Downward position)
+plot(time_iter, -aircraft_array(3,:), 'b');
+ylabel('Height (Z)')
+legend('First-Order', 'Kinematic', 'Full EOM');
 
-% Subplot 3: Airspeed (Va)
-subplot(313);
-plot(time_iter, Va_full, 'b-', 'LineWidth', 1.5);
-ylabel('V_a [m/s]');
-xlabel('Time [sec]');
+% --- Figure 21: Guidance & State States (Chi, Height, and Va) ---
+figure(21); clf;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Plotting
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- SUBPLOT 1: Course Angle ---
+subplot(311); hold on;
+chi_first_fixed = atan2(diff(YFO(:,2)), diff(YFO(:,1))); % Gemini fix. finds velocity for proper course angle calc
+chi_first_fixed = [chi_first_fixed(1); chi_first_fixed]; % Match array length
+plot(TFO, chi_first_fixed*180/pi, 'g--'); 
 
-%PlotSimulation(time_iter,aircraft_array,control_array, wind_array,'b')
+% 2. Kinematic
+plot(time_iter_guide, guide_array(3,:)*180/pi, 'r'); 
 
-% col = 'm';
-% 
-% if (CONTROL_FLAG==FEED)
-%     col = 'm';
-% else
-%     col = 'b';
-% end
-% 
-% 
-% frewhw6utils.PlotSimulationWithCommands(time_iter,aircraft_array,control_array, wind_array, x_command, col)
+psi_blue = aircraft_array(6,:);
+u_blue   = aircraft_array(7,:);
+v_blue   = aircraft_array(8,:);
+V_n_blue = u_blue .* cos(psi_blue) - v_blue .* sin(psi_blue);
+V_e_blue = u_blue .* sin(psi_blue) + v_blue .* cos(psi_blue);
+chi_full_fixed = atan2(V_e_blue, V_n_blue);
+plot(time_iter, chi_full_fixed*180/pi, 'b'); 
 
-% %%% Add desired circle to path plot
-% figure(8);hold on;
-% plot3(circ_pos(1,:), circ_pos(2,:), -circ_pos(3,:),'--')
-% 
-% 
-% %%% Distance from desired circle
-% for j = 1:length(time_iter)
-%     err_pos = aircraft_array(1:3,j) - orbit_center;
-%     dist_from_center = norm(err_pos);
-%     dist_from_circ(j) = dist_from_center - orbit_radius;
-% end
-% figure(11);
-% plot(time_iter,dist_from_circ, col); hold on;
-% title('Distance Desired Orbit vs. Time')
-% ylabel('Tracking Error [m]')
-% xlabel('Time [sec]')
+ylabel('\chi [deg]'); title('Guidance State Comparison');
+grid on;
 
-% 
-% 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%% Animate aircraft flight
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% if (ANIMATE_FLAG)
-%     %pause();
-%     DefineTTwistor
-% 
-%     for aa = 1:length(time_iter)
-%         DrawAircraft(time_iter(aa), aircraft_array(:,aa), pts);
-%     end
-% 
-%     AnimateSimulation(time_iter, aircraft_array')
-% end
+% --- SUBPLOT 2: Height ---
+subplot(312); hold on;
+plot(TFO, -YFO(:,3), 'g--');
+plot(time_iter_guide, guide_array(5,:), 'r');
+plot(time_iter, -aircraft_array(3,:), 'b');
+ylabel('Height [m]');
+grid on;
+
+% --- SUBPLOT 3: Airspeed ---
+subplot(313); hold on;
+plot(TFO, ones(size(TFO))*V_trim, 'g--'); 
+plot(time_iter_guide, guide_array(7,:), 'r'); 
+plot(time_iter, aircraft_array(7,:), 'b');
+ylabel('V_a [m/s]'); xlabel('Time [s]');
+legend('First-Order', 'Kinematic', 'Full EOM', 'Location', 'best');
+grid on;

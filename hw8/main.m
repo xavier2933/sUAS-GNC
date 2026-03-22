@@ -116,7 +116,7 @@ time_iter(1) = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
 state_guide = [0;0;0;0;-aircraft_state0(3,1);0;V_trim];
-control_ob = [h_trim;0;deg2rad(30);0;V_trim]
+control_ob = [h_trim+20;0;deg2rad(30);0;V_trim+1]
 control_objectives = control_ob;
 
 aircraft_parameters.bc = 0.4;
