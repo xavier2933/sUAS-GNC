@@ -63,11 +63,13 @@ load(gains_file)
 %%% Note, STUDENTS may need to change these while tuning the autopilot.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-pos_line = [300;400;-h_trim];
+pos_line = [300;0;-h_trim];
+% dir_line = [sqrt(2)/2;8*sqrt(2)/2;0];
 dir_line = [sqrt(2)/2;8*sqrt(2)/2;0];
+
 dir_line = dir_line / norm(dir_line);
 kpath = 0.01;
-chi_inf = 80 * pi/180;
+chi_inf = 10 * pi/180;
 
 des_line = [pos_line-1000*dir_line, pos_line + 8000*dir_line];
 
