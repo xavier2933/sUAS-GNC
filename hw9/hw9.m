@@ -32,7 +32,7 @@ for i = 1:n
     we_all(i, :)   = we(:)';
 end
 
-t = 1:n; % or use actual time vector if available
+t = 1:n;
 
 wx = we_all(:,1);
 wy = we_all(:,2);
@@ -48,7 +48,7 @@ wy_ds = wy(idx);
 figure; hold on; grid on;
 
 n = length(data.lat);
-t = data.Time;   % or (1:n)
+t = data.Time;
 
 %% --- Gradient trajectory ---
 surface([data.lon data.lon], ...
@@ -67,37 +67,55 @@ xlabel('Longitude');
 ylabel('Latitude');
 title('Trajectory with Wind Vectors');
 
-%% --- Wind vectors (downsampled) ---
-idx = 1:1000:n;
+idx = 1:700:n;
 
-% Extract horizontal wind
 wx = we_all(:,1);
 wy = we_all(:,2);
 
-% Scale for visibility (tune this!)
-scale = 0.0005;
+scale = 0.0003;
 
-quiver(data.lon(idx), data.lat(idx), ...
-       wx(idx)*scale, wy(idx)*scale, ...
-       0, ...                % disable auto scaling
-       'm', ...              % black arrows for contrast
-       'LineWidth', 1);
+quiver(data.lon(idx), data.lat(idx), wx(idx)*scale, wy(idx)*scale, 0, 'm','LineWidth', 1);
 
 legend('Trajectory', 'Wind');
 
 
 
-% figure;
-% plot(t, Va_all);
-% title('V_a (Body Frame)');
-% legend('x','y','z');
+% %% --- Figure 1: Airspeed (Body Frame) ---
+% figure('Name', 'Airspeed - Body Frame', 'NumberTitle', 'off');
+% labels_b = {'u (forward)', 'v (lateral)', 'w (vertical)'};
+% for i = 1:3
+%     subplot(3, 1, i);
+%     plot(t, Va_all(:, i), 'Color', [0 0.447 0.741]); % Blue
+%     ylabel(['V_{a,b} ', labels_b{i}, ' (m/s)']);
+%     grid on;
+%     if i == 1, title('Airspeed Components: Body Frame'); end
+% end
+% xlabel('Time / Samples');
 % 
-% figure;
-% plot(t, Va_e_all);
-% title('V_a (Inertial Frame)');
-% legend('x','y','z');
+% %% --- Figure 2: Airspeed (Inertial Frame) ---
+% figure('Name', 'Airspeed - Inertial Frame', 'NumberTitle', 'off');
+% labels_e = {'X (North)', 'Y (East)', 'Z (Down)'};
+% for i = 1:3
+%     subplot(3, 1, i);
+%     plot(t, Va_e_all(:, i), 'Color', [0.85 0.325 0.098]); % Orange
+%     ylabel(['V_{a,e} ', labels_e{i}, ' (m/s)']);
+%     grid on;
+%     if i == 1, title('Airspeed Components: Inertial Frame'); end
+% end
+% xlabel('Time / Samples');
 % 
-% figure;
-% plot(t, we_all);
-% title('Wind (Inertial Frame)');
-% legend('x','y','z');
+% %% --- Figure 3: Wind (Inertial Frame) ---
+% figure('Name', 'Wind - Inertial Frame', 'NumberTitle', 'off');
+% labels_w = {'W_n', 'W_e', 'W_d'};
+% for i = 1:3
+%     subplot(3, 1, i);
+%     plot(t, we_all(:, i), 'Color', [0.466 0.674 0.188]); % Green
+%     ylabel(['Wind ', labels_w{i}, ' (m/s)']);
+%     grid on;
+%     if i == 1, title('Wind Components: Inertial Frame'); end
+% end
+% xlabel('Time / Samples');
+% 
+% % Link the x-axes of all subplots across all figures for synchronized zooming
+% all_axes = findall(0, 'type', 'axes');
+% linkaxes(all_axes, 'x');
