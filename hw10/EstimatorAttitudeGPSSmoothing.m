@@ -56,7 +56,7 @@ end
 %%% height
 %%%%%%%%%%%%%%%
 
-a_h = [];% <======================STUDENT COMPLETE, SAME AS SIMPLE ESTIMATOR
+a_h = [1000]; % <======================STUDENT SELECT
 alpha_h = exp(-a_h*Ts_imu);
 
 if(isempty(press_stat))
@@ -64,21 +64,21 @@ if(isempty(press_stat))
 else
     press_stat = LowPassFilter(press_stat, inertial_sensors(7), alpha_h);
 end
-hhat = [];% <======================STUDENT COMPLETE, SAME AS SIMPLE ESTIMATOR
+hhat = [press_stat/(density * g)];% <======================STUDENT COMPLETE
 
 %%%%%%%%%%%%%%%%
 %%% airspeed
 %%%%%%%%%%%%%%%%
 
-a_Va = [];% <======================STUDENT COMPLETE, SAME AS SIMPLE ESTIMATOR
-alpha_Va = exp(-a_h*Ts_imu);
+a_Va =  [1]; % <======================STUDENT SELECT
+alpha_Va = exp(-a_Va*Ts_imu);
 
 if(isempty(press_dyn))
     press_dyn = inertial_sensors(8);
 else
     press_dyn = LowPassFilter(press_dyn, inertial_sensors(8), alpha_Va);
 end
-Va = [];% <======================STUDENT COMPLETE, SAME AS SIMPLE ESTIMATOR
+Va =  [sqrt(press_dyn * (2/density))];% <======================STUDENT COMPLETE
 
 %%%%%%%%%%%%%%%%%%%%%
 %%% orientation
@@ -167,7 +167,7 @@ wind_body_est = utils.TransformFromInertialToBody([xhat_gps(5);xhat_gps(6);0] , 
 air_rel_est = [Va*cos(theta_hat); 0; Va*sin(theta_hat)];
 vel_body_est = air_rel_est + wind_body_est;
 
-aircraft_state_est = [0;0;0;0;0;0;0;0;0;0;0;0];% <======================STUDENT COMPLETE
+aircraft_state_est = [xhat_gps(1);xhat_gps(2);-(h_ground + hhat);phi_hat;theta_hat;xhat_gps(7);vel_body_est(1);vel_body_est(2);vel_body_est(3);phat;qhat;rhat];% <======================STUDENT COMPLETE
 wind_inertial_est = [0;0;0];% <======================STUDENT COMPLETE
 
 end %function
@@ -194,17 +194,23 @@ end
 
 function [xdot, A] = AttitudeFilterUpdate(phi, theta, p, q, r)
 
-xdot =   [0;0];% <======================STUDENT COMPLETE
+xdot =   [p + q * sin(theta) * tan(theta) + r * cos(phi) * tan(theta);
+            q * cos(phi) - r * sin(phi)];% <======================STUDENT COMPLETE
     
-A = [0,0;0,0];% <======================STUDENT COMPLETE
+A = [q * cos(phi) * tan(theta) - r*sin(phi)*tan(theta), (q * sin(phi) - r*cos(phi))/(cos(theta))^2;
+        -q * sin(phi) - r*cos(phi), 0];% <======================STUDENT COMPLETE
 
 end
 
 function [y, H] = AttitudeFilterMeasurement(phi, theta, p, q, r, Va, g)
 
-y = [0;0;0];% <======================STUDENT COMPLETE
+y = [q * Va * sin(theta)+g*sin(theta);
+    r * Va*cos(theta) - p * Va *sin(theta) - g*cos(theta)*sin(phi);
+    -q * Va * cos(theta) - g*cos(theta) *cos(phi)];% <======================STUDENT COMPLETE
 
-H = [0,0;0,0;0,0];% <======================STUDENT COMPLETE
+H = [0, q *Va*cos(theta) + g*cos(theta);
+    -g*cos(phi)*cos(theta), -r*Va*sin(theta) - p*Va*cos(theta) + g*sin(phi)*sin(theta);
+    g*sin(phi)*cos(theta), (q*Va + g*cos(phi)*sin(theta))];% <======================STUDENT COMPLETE
 
 end
 
@@ -216,20 +222,59 @@ end
 
 % xh = [pn, pe, Vg, chi, wn, we, psi]
 function [xdot, A] = GPSSmoothingUpdate(xh, Va, q, r, roll, pitch, g)
+    Vg  = xh(3);
+    chi = xh(4);
+    wn  = xh(5);
+    we  = xh(6);
+    psi = xh(7);
 
-psidot = q*sin(roll)/cos(pitch) + r*cos(roll)/cos(pitch);
-Vg_dot = ((Va*sin(xh(7))+xh(6))*(Va*psidot*cos(xh(7)))-(Va*cos(xh(7))+xh(5))*(Va*psidot*sin(xh(7))))/xh(3);
+    psidot = q*sin(roll)/cos(pitch) + r*cos(roll)/cos(pitch);
+    Vg_dot = ((Va*sin(psi)+we)*(Va*psidot*cos(psi))-(Va*cos(psi)+wn)*(Va*psidot*sin(psi)))/Vg; 
 
-xdot = [0;0;0;0;0;0;0];% <======================STUDENT COMPLETE
-    
-A = zeros(7,7);% <======================STUDENT COMPLETE
+    chidot = (g/Vg) * tan(roll) * cos(chi - psi);
 
+    xdot = [Vg * cos(chi);
+            Vg * sin(chi);
+            Vg_dot;
+            chidot;
+            0;
+            0;
+            psidot];
+
+    dVgdot_dpsi = (-psidot * Va * (wn*cos(psi) + we*sin(psi))) / Vg;
+    dchidot_dVg = -(g / Vg^2) * tan(roll) * cos(chi - psi);
+    dchidot_dchi = -(g / Vg) * tan(roll) * sin(chi - psi);
+    dchidot_dpsi = (g / Vg) * tan(roll) * sin(chi - psi);
+
+    % 5. Build the Matrix A (7x7)
+    A = [...
+        0, 0, cos(chi), -Vg*sin(chi), 0, 0, 0;
+        0, 0, sin(chi),  Vg*cos(chi), 0, 0, 0;
+        0, 0, -Vg_dot/Vg, 0, -psidot*Va*sin(psi), psidot*Va*cos(psi), dVgdot_dpsi;
+        0, 0, dchidot_dVg, dchidot_dchi, 0, 0, dchidot_dpsi;
+        0, 0, 0, 0, 0, 0, 0;
+        0, 0, 0, 0, 0, 0, 0;
+        0, 0, 0, 0, 0, 0, 0;
+    ];
 end
 
 function [y, H] = GPSSmoothingMeasurement(xh, Va)
+pn = xh(1);
+pe = xh(2);
+Vg = xh(3);
+chi = xh(4);
+wn = xh(5);
+we = xh(6);
+psi = xh(7);
 
-y = [0;0;0;0;0;0];% <======================STUDENT COMPLETE
+y = [pn;pe;Vg;chi;
+    Va * cos(psi) + wn - Vg*cos(chi);
+    Va * sin(psi) + we - Vg * sin(chi)];% <======================STUDENT COMPLETE
 
-H = [eye(6), zeros(6,1)];% <======================STUDENT COMPLETE
-
+H = [1 0 0 0 0 0 0;
+     0 1 0 0 0 0 0;
+     0 0 1 0 0 0 0;
+     0 0 0 1 0 0 0;
+     0 0 -cos(chi) Vg*sin(chi) 1 0 -Va*sin(psi);
+     0 0 -sin(chi) -Vg*cos(chi) 0 1 Va*cos(psi)];
 end

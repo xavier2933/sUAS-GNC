@@ -21,7 +21,7 @@ SMOOTH = 2;
 %%% Set flags
 ANIMATE_FLAG = 0; % <========= Set to 1 to show animation after simulation
 CONTROL_FLAG = FEED; % <========= Set to control law to use (SLC or FEED)
-ESTIM_FLAG = SIMPLE; % <========= Set to estimator to use (SIMPLE or SMOOTH)
+ESTIM_FLAG = SMOOTH; % <========= Set to estimator to use (SIMPLE or SMOOTH)
 ESTIM_CONTROL_FLAG = 0;% <========= Set to 1 to control from estimated state (not true state)
 
 %%% Aircraft parameters
