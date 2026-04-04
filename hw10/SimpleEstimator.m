@@ -29,7 +29,7 @@ persistent chi_hat
 
 
 h_ground = sensor_params.h_ground;
-density = stdatmo(h_ground);
+density = utils.stdatmo(h_ground);
 
 Ts_imu = sensor_params.Ts_imu;
 Ts_gps = sensor_params.Ts_gps;
@@ -64,7 +64,7 @@ end
 %%% height
 %%%%%%%%%%%%%%%
 
-a_h = []; % <======================STUDENT SELECT
+a_h = [1000]; % <======================STUDENT SELECT
 alpha_h = exp(-a_h*Ts_imu);
 
 if(isempty(press_stat))
@@ -72,13 +72,13 @@ if(isempty(press_stat))
 else
     press_stat = LowPassFilter(press_stat, inertial_sensors(7), alpha_h);
 end
-hhat = [];% <======================STUDENT COMPLETE
+hhat = [press_stat/(density * g)];% <======================STUDENT COMPLETE
 
 %%%%%%%%%%%%%%%%
 %%% airspeed
 %%%%%%%%%%%%%%%%
 
-a_Va =  []; % <======================STUDENT SELECT
+a_Va =  [1]; % <======================STUDENT SELECT
 alpha_Va = exp(-a_Va*Ts_imu);
 
 if(isempty(press_dyn))
@@ -86,13 +86,13 @@ if(isempty(press_dyn))
 else
     press_dyn = LowPassFilter(press_dyn, inertial_sensors(8), alpha_Va);
 end
-Va =  [];% <======================STUDENT COMPLETE
+Va =  [sqrt(press_dyn * (2/density))];% <======================STUDENT COMPLETE
 
 
 %%%%%%%%%%%%%%%%%%%%
 %%% position (gps)
 %%%%%%%%%%%%%%%%%%%%
-a_gps =  []; % <======================STUDENT SELECT
+a_gps =  [0.5]; % <======================STUDENT SELECT
 alpha_gps = exp(-a_gps*Ts_gps);
 
 
@@ -123,7 +123,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%
 %%% orientation
 %%%%%%%%%%%%%%%%%%%%
-a_acc =  []; % <======================STUDENT SELECT
+a_acc =  [10]; % <======================STUDENT SELECT
 alpha_acc = exp(-a_acc*Ts_imu);
 
 if(isempty(s_x))
@@ -142,18 +142,18 @@ else
     s_z = LowPassFilter(s_z, inertial_sensors(3), alpha_acc);
 end
 
-roll_hat =  [];% <======================STUDENT COMPLETE
-pitch_hat =  [];% <======================STUDENT COMPLETE
+roll_hat =  [atan((-s_y)/(-s_z))];% <======================STUDENT COMPLETE
+pitch_hat =  [asin(s_x/g)];% <======================STUDENT COMPLETE
 yaw_hat = chi_hat;%%%%%
 
 %%%%%%%%%%%%%%%
 %%% output
 %%%%%%%%%%%%%%%
+V = utils.WindAnglesToAirRelativeVelocityVector([Va;0;0]);
 
-
-aircraft_state_est =  [0;0;0;0;0;0;0;0;0;0;0;0];% <======================STUDENT COMPLETE
+aircraft_state_est =  [pn_hat;pe_hat;-(hhat + h_ground);roll_hat;pitch_hat;yaw_hat;V(1);V(2);V(3);phat;qhat;rhat];% <======================STUDENT COMPLETE
      
-wind_inertial_est = [0; 0; 0];
+wind_inertial_est = [0;0;0];
 
 end %function
 
