@@ -72,8 +72,8 @@ gvf_speed = 18;
 gvf_radius = 500;
 gvf_center = [5000;5000;-1805];
 gvf_flag=1;
-gvf_gains.kr = .01;
-gvf_gains.kz = .001;
+gvf_gains.kr = 1.5;
+gvf_gains.kz = .005;
 
 
 
@@ -108,7 +108,7 @@ wind_inertial = [0;10;0];
 
 Ts = sensor_params.Ts_imu; % which should be 0.1 sec;
 
-%sensor_params.Ts_gps = Ts; % <============================ Uncomment this line if you want GPS to run as fast as the IMU
+sensor_params.Ts_gps = Ts; % <============================ Uncomment this line if you want GPS to run as fast as the IMU
 
 
 

@@ -92,7 +92,7 @@ Va =  [sqrt(press_dyn * (2/density))];% <======================STUDENT COMPLETE
 %%%%%%%%%%%%%%%%%%%%
 %%% position (gps)
 %%%%%%%%%%%%%%%%%%%%
-a_gps =  [0.5]; % <======================STUDENT SELECT
+a_gps =  [0.1]; % <======================STUDENT SELECT
 alpha_gps = exp(-a_gps*Ts_gps);
 
 
@@ -123,7 +123,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%
 %%% orientation
 %%%%%%%%%%%%%%%%%%%%
-a_acc =  [10]; % <======================STUDENT SELECT
+a_acc =  [0.1]; % <======================STUDENT SELECT
 alpha_acc = exp(-a_acc*Ts_imu);
 
 if(isempty(s_x))

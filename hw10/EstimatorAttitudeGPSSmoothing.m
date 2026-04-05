@@ -31,7 +31,7 @@ g = sensor_params.g;
 %%%%%%%%%%%%%%%%%%%%%%
 %%% angular velocity
 %%%%%%%%%%%%%%%%%%%%%%
-a_omega = 1000;
+a_omega = 2;
 alpha_omega = exp(-a_omega*Ts_imu);
 
 if(isempty(phat))
@@ -56,7 +56,7 @@ end
 %%% height
 %%%%%%%%%%%%%%%
 
-a_h = [1000]; % <======================STUDENT SELECT
+a_h = [1.8]; % <======================STUDENT SELECT
 alpha_h = exp(-a_h*Ts_imu);
 
 if(isempty(press_stat))
@@ -70,7 +70,7 @@ hhat = [press_stat/(density * g)];% <======================STUDENT COMPLETE
 %%% airspeed
 %%%%%%%%%%%%%%%%
 
-a_Va =  [1]; % <======================STUDENT SELECT
+a_Va =  [10]; % <======================STUDENT SELECT
 alpha_Va = exp(-a_Va*Ts_imu);
 
 if(isempty(press_dyn))
@@ -114,10 +114,10 @@ end
 Qgps = [10^2 0 0 0 0 0 0;...   %pn
      0 10^2 0 0 0 0 0;...   % pe
      0 0 2^2 0 0 0 0;...    %Vg
-     0 0 0 (5*pi/180)^2 0 0 0;...      %chi
+     0 0 0 (5*pi/180)^2 0 0 0;...      %chi also was 5
      0 0 0 0 25 0 0;...    %wn
      0 0 0 0 0 25 0;...    %we
-     0 0 0 0 0 0 (5*pi/180)^2];    %psi
+     0 0 0 0 0 0 (25*pi/180)^2];    %psi was 5 originally
 
 
 Rgps = [sensor_params.sig_gps(1)^2 0 0 0 0 0;...
@@ -168,7 +168,7 @@ air_rel_est = [Va*cos(theta_hat); 0; Va*sin(theta_hat)];
 vel_body_est = air_rel_est + wind_body_est;
 
 aircraft_state_est = [xhat_gps(1);xhat_gps(2);-(h_ground + hhat);phi_hat;theta_hat;xhat_gps(7);vel_body_est(1);vel_body_est(2);vel_body_est(3);phat;qhat;rhat];% <======================STUDENT COMPLETE
-wind_inertial_est = [0;0;0];% <======================STUDENT COMPLETE
+wind_inertial_est = [xhat_gps(5);xhat_gps(6);0];% <======================STUDENT COMPLETE
 
 end %function
 
@@ -194,7 +194,7 @@ end
 
 function [xdot, A] = AttitudeFilterUpdate(phi, theta, p, q, r)
 
-xdot =   [p + q * sin(theta) * tan(theta) + r * cos(phi) * tan(theta);
+xdot =   [p + q * sin(phi) * tan(theta) + r * cos(phi) * tan(theta);
             q * cos(phi) - r * sin(phi)];% <======================STUDENT COMPLETE
     
 A = [q * cos(phi) * tan(theta) - r*sin(phi)*tan(theta), (q * sin(phi) - r*cos(phi))/(cos(theta))^2;
@@ -229,8 +229,7 @@ function [xdot, A] = GPSSmoothingUpdate(xh, Va, q, r, roll, pitch, g)
     psi = xh(7);
 
     psidot = q*sin(roll)/cos(pitch) + r*cos(roll)/cos(pitch);
-    Vg_dot = ((Va*sin(psi)+we)*(Va*psidot*cos(psi))-(Va*cos(psi)+wn)*(Va*psidot*sin(psi)))/Vg; 
-
+    Vg_dot = ((Va*sin(xh(7))+xh(6))*(Va*psidot*cos(xh(7)))-(Va*cos(xh(7))+xh(5))*(Va*psidot*sin(xh(7))))/xh(3);
     chidot = (g/Vg) * tan(roll) * cos(chi - psi);
 
     xdot = [Vg * cos(chi);
