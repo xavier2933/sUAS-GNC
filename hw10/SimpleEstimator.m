@@ -64,7 +64,7 @@ end
 %%% height
 %%%%%%%%%%%%%%%
 
-a_h = [1000]; % <======================STUDENT SELECT
+a_h = [10]; % <======================STUDENT SELECT
 alpha_h = exp(-a_h*Ts_imu);
 
 if(isempty(press_stat))
@@ -78,7 +78,7 @@ hhat = [press_stat/(density * g)];% <======================STUDENT COMPLETE
 %%% airspeed
 %%%%%%%%%%%%%%%%
 
-a_Va =  [1]; % <======================STUDENT SELECT
+a_Va =  [10]; % <======================STUDENT SELECT
 alpha_Va = exp(-a_Va*Ts_imu);
 
 if(isempty(press_dyn))
@@ -92,7 +92,7 @@ Va =  [sqrt(press_dyn * (2/density))];% <======================STUDENT COMPLETE
 %%%%%%%%%%%%%%%%%%%%
 %%% position (gps)
 %%%%%%%%%%%%%%%%%%%%
-a_gps =  [0.1]; % <======================STUDENT SELECT
+a_gps =  [10]; % <======================STUDENT SELECT
 alpha_gps = exp(-a_gps*Ts_gps);
 
 
@@ -115,8 +115,21 @@ end
 if(isempty(chi_hat))
     chi_hat = gps_sensor(5);
 else
-    if(mod(time, Ts_gps)==0) % <=============== Only update at GPS rate
-        chi_hat = LowPassFilter(chi_hat, gps_sensor(5), alpha_gps);
+    if(mod(time, Ts_gps) == 0) % Only update at GPS rate
+        % 1. Get the new measurement
+        chi_meas = gps_sensor(5); 
+        
+        % 2. Unwrap the measurement relative to current estimate
+        % This ensures the difference is always within [-pi, pi]
+        while (chi_meas - chi_hat) > pi
+            chi_meas = chi_meas - 2*pi;
+        end
+        while (chi_meas - chi_hat) < -pi
+            chi_meas = chi_meas + 2*pi;
+        end
+        
+        % 3. Filter the unwrapped measurement
+        chi_hat = LowPassFilter(chi_hat, chi_meas, alpha_gps);
     end
 end
 

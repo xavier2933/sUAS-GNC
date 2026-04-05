@@ -56,7 +56,7 @@ end
 %%% height
 %%%%%%%%%%%%%%%
 
-a_h = [1.8]; % <======================STUDENT SELECT
+a_h = [0.5]; % <======================STUDENT SELECT
 alpha_h = exp(-a_h*Ts_imu);
 
 if(isempty(press_stat))
@@ -70,7 +70,7 @@ hhat = [press_stat/(density * g)];% <======================STUDENT COMPLETE
 %%% airspeed
 %%%%%%%%%%%%%%%%
 
-a_Va =  [10]; % <======================STUDENT SELECT
+a_Va =  [1.2]; % <======================STUDENT SELECT
 alpha_Va = exp(-a_Va*Ts_imu);
 
 if(isempty(press_dyn))
