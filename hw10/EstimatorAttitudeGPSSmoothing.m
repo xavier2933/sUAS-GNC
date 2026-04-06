@@ -70,7 +70,7 @@ hhat = [press_stat/(density * g)];% <======================STUDENT COMPLETE
 %%% airspeed
 %%%%%%%%%%%%%%%%
 
-a_Va =  [1.2]; % <======================STUDENT SELECT
+a_Va =  [1.0]; % <======================STUDENT SELECT
 alpha_Va = exp(-a_Va*Ts_imu);
 
 if(isempty(press_dyn))
@@ -117,7 +117,7 @@ Qgps = [10^2 0 0 0 0 0 0;...   %pn
      0 0 0 (5*pi/180)^2 0 0 0;...      %chi also was 5
      0 0 0 0 25 0 0;...    %wn
      0 0 0 0 0 25 0;...    %we
-     0 0 0 0 0 0 (25*pi/180)^2];    %psi was 5 originally
+     0 0 0 0 0 0 (5*pi/180)^2];    %psi was 5 originally
 
 
 Rgps = [sensor_params.sig_gps(1)^2 0 0 0 0 0;...
@@ -197,7 +197,7 @@ function [xdot, A] = AttitudeFilterUpdate(phi, theta, p, q, r)
 xdot =   [p + q * sin(phi) * tan(theta) + r * cos(phi) * tan(theta);
             q * cos(phi) - r * sin(phi)];% <======================STUDENT COMPLETE
     
-A = [q * cos(phi) * tan(theta) - r*sin(phi)*tan(theta), (q * sin(phi) - r*cos(phi))/(cos(theta))^2;
+A = [q * cos(phi) * tan(theta) - r*sin(phi)*tan(theta), (q * sin(phi) + r*cos(phi))/(cos(theta))^2;
         -q * sin(phi) - r*cos(phi), 0];% <======================STUDENT COMPLETE
 
 end

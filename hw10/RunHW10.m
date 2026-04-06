@@ -22,7 +22,7 @@ SMOOTH = 2;
 ANIMATE_FLAG = 0; % <========= Set to 1 to show animation after simulation
 CONTROL_FLAG = FEED; % <========= Set to control law to use (SLC or FEED)
 ESTIM_FLAG = SMOOTH; % <========= Set to estimator to use (SIMPLE or SMOOTH)
-ESTIM_CONTROL_FLAG = 1;% <========= Set to 1 to control from estimated state (not true state)
+ESTIM_CONTROL_FLAG = 0;% <========= Set to 1 to control from estimated state (not true state)
 
 %%% Aircraft parameters
 aircraft_parameters = utils.ttwistor();
@@ -89,7 +89,8 @@ aircraft_state0(4,1) = 0*pi/180;
 control_input0 = control_input_trim;
 
 wind_inertial = [0;10;0];
-
+wind_body = utils.TransformFromInertialToBody(wind_inertial, aircraft_state0(4:6,1));
+aircraft_state0(7:9,1) = aircraft_state0(7:9,1) + wind_body;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,7 +109,7 @@ wind_inertial = [0;10;0];
 
 Ts = sensor_params.Ts_imu; % which should be 0.1 sec;
 
-sensor_params.Ts_gps = Ts; % <============================ Uncomment this line if you want GPS to run as fast as the IMU
+%sensor_params.Ts_gps = Ts; % <============================ Uncomment this line if you want GPS to run as fast as the IMU
 
 
 
