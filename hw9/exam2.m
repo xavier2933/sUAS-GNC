@@ -65,14 +65,15 @@ t_chop = t(d_start:d_end);
 figure()
 subplot(3,1,1)
 plot(t_chop, Vw)
-ylabel("V_w")
+ylabel("V_w [m/s]")
 subplot(3,1,2)
 plot(t_chop, chi_w)
-ylabel("\chi_w")
+ylabel("\chi_w [rads]")
 subplot(3,1,3)
 plot(t_chop, we_all(d_start:d_end, 3))
-ylabel("w_z")
+ylabel("w_z [m/s]")
 xlabel("Time [minutes]")
+sgtitle('Wind Components');
 
 
 
@@ -80,7 +81,7 @@ xlabel("Time [minutes]")
 
 
 
-
+%%
 
 %%%%%%%% Q2.2
 euler_0 = [0;deg2rad(4);0];
@@ -90,6 +91,54 @@ v_e_e_0 = [18;0;2];
 
 div = 0.0001;
 [vVw, vVchi, vWz] = get_sensitivities(v_e_e_0, euler_0, w_0, div)
+
+
+%%%%%%%%%% Q2.3
+num_samples = d_end - d_start + 1;
+Vw_mat   = zeros(num_samples, 6);
+Vchi_mat = zeros(num_samples, 6);
+Wz_mat   = zeros(num_samples, 6);
+
+for i = d_start:d_end
+    v_tip_current = data.aircraft_velocity_inertial(:,i);
+    euler_current = [deg2rad(data.roll(i)); deg2rad(data.pitch(i)); deg2rad(data.yaw(i))];
+    wind_current  = [data.Va(i); deg2rad(data.beta(i)); deg2rad(data.alpha(i))];
+    
+    [Vw_s, Vchi_s, Wz_s] = get_sensitivities(v_tip_current, euler_current, wind_current, div);
+    
+    idx = i - d_start + 1;
+    Vw_mat(idx, :)   = Vw_s;
+    Vchi_mat(idx, :) = Vchi_s;
+    Wz_mat(idx, :)   = Wz_s;
+end
+
+avg_Vw = mean(Vw_mat)
+std_Vw = std(Vw_mat)
+
+
+avg_Vchi = mean(Vchi_mat)
+std_Vchi = std(Vchi_mat)
+
+avg_Wz = mean(Wz_mat)
+std_Wz = std(Wz_mat)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 % %% --- Gradient trajectory ---

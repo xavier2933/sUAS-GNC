@@ -4,7 +4,9 @@ function [sVw, sChi, sWz] = get_sensitivities(v_tip, euler, wind_angs, div)
     chi_nom = atan2(we_nom(2), we_nom(1));
     wz_nom  = we_nom(3);
 
-    sVw = zeros(1,6); sChi = zeros(1,6); sWz = zeros(1,6);
+    sVw = zeros(1,6); 
+    sChi = zeros(1,6); 
+    sWz = zeros(1,6);
 
     for i = 1:6
         e_pert = euler; 
