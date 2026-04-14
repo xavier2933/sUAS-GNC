@@ -180,7 +180,7 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             r_va     = (Va_err      / 3)^2;
         
             % Base survival reward — agent always wants to keep flying
-            reward = 2.0 - 0.5*(r_cross + r_course + r_h + r_va);
+            reward = 1.0 - 0.5*(r_cross + r_course + r_h + r_va);
         
             % Proximity bonus
             if abs(cross_track) < 5

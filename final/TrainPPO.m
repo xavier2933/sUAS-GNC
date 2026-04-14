@@ -76,10 +76,10 @@ agentOpts = rlPPOAgentOptions( ...
     'ActorOptimizerOptions',    rlOptimizerOptions('LearnRate', 1e-4), ...
     'CriticOptimizerOptions',   rlOptimizerOptions('LearnRate', 1e-3));
 
-agent = rlPPOAgent(actor, critic, agentOpts);
+%agent = rlPPOAgent(actor, critic, agentOpts);
 
-% data  = load('saved_agents/Agent500.mat');  % pick the best one
-% agent = data.saved_agent;
+data  = load('saved_agents/agent_manual.mat');  % pick the best one
+agent = data.agent; % maybe saved_agent?
 
 % Each training run gets its own subfolder so files never mix or overwrite.
 % Files inside will be Agent1.mat, Agent2.mat... but scoped to this run.
@@ -97,7 +97,7 @@ trainOpts = rlTrainingOptions( ...
     'Verbose',              true, ...
     'Plots',                'training-progress', ...
     'SaveAgentCriteria',    'EpisodeReward', ...
-    'SaveAgentValue',       4000, ...      % only checkpoint genuinely good episodes
+    'SaveAgentValue',       3600, ...      % only checkpoint genuinely good episodes
     'SaveAgentDirectory',   agentDir);
 
 %% Train
