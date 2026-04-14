@@ -114,11 +114,7 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             reward = this.computeReward(obs);
 
             % --- Check termination ---
-            % No early termination on cross-track — always run MaxSteps.
-            % A continuous boundary penalty in the reward handles large deviations
-            % without creating the bimodal episode-length distribution that
-            % destabilizes PPO batch composition.
-            isDone = this.StepCount >= this.MaxSteps;
+            isDone = this.StepCount >= this.MaxSteps || abs(obs(1)) > 50;
             this.IsDone = isDone;
             info = [];
         end
@@ -183,21 +179,12 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             r_h      = (h_err       / 50)^2;
             r_va     = (Va_err      / 3)^2;
         
-            % Base survival reward
+            % Base survival reward — agent always wants to keep flying
             reward = 2.0 - 0.5*(r_cross + r_course + r_h + r_va);
         
-            % Proximity bonus: reward tight tracking
+            % Proximity bonus
             if abs(cross_track) < 5
                 reward = reward + 1.0;
-            end
-
-            % Continuous boundary penalty — grows quadratically past 30 m.
-            % Replaces the old hard termination at 50 m: the critic now sees
-            % a smooth cost signal instead of a cliff, keeping episode lengths
-            % uniform and stabilizing batch composition.
-            if abs(cross_track) > 30
-                excess = abs(cross_track) - 30;
-                reward = reward - 0.05 * excess^2;
             end
         end
     end
