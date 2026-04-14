@@ -8,7 +8,7 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
         trim_variables
         
         % Guidance line
-        pos_line = [300; 0; -1805]
+        pos_line = [0; 0; -1805]
         dir_line  % normalized
         kpath = 0.01
         chi_inf   % max course error (rad)
@@ -41,11 +41,11 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             obsInfo.Name = 'observations';
 
             % --- Define action space ---
-            % PPO outputs [chi_cmd (rad), h_cmd (m), Va_cmd (m/s)]
-            % Or alternatively: corrections to the baseline guidance output
+            % PPO outputs DELTA corrections: [dchi (rad), dh (m), dVa (m/s)]
+            % Applied on top of baseline (chi_des, h_des, V_trim) each step
             actInfo = rlNumericSpec([3 1], ...
-                'LowerLimit', [-pi/4; 1600; 14], ...
-                'UpperLimit', [ pi/4; 2000; 22]);
+                'LowerLimit', [-pi/6; -30; -3], ...
+                'UpperLimit', [ pi/6;  30;  3]);
             actInfo.Name = 'actions';
 
             this = this@rl.env.MATLABEnvironment(obsInfo, actInfo);
@@ -66,18 +66,22 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
 
             % Load gains
             load('ttwistor_gains_slc', '-mat');
-            this.control_gain_struct = gains;  % adjust to match your gains struct variable name
+            this.control_gain_struct = control_gain_struct;  % adjust to match your gains struct variable name
             this.control_gain_struct.Ts = this.Ts;
+            this.control_gain_struct.takeoff_height = -999;     % aircraft never below this → takeoff never triggers
+            this.control_gain_struct.height_hold_limit = 99999; % band is enormous → always in altitude hold
+
         end
 
         function [obs, reward, isDone, info] = step(this, action)
             i = this.StepCount;
             TSPAN = this.Ts * [i, i+1];
 
-            % --- Unpack action (RL policy output) ---
-            chi_cmd = action(1);
-            h_cmd   = action(2);
-            Va_cmd  = action(3);
+            % --- Unpack action (RL policy: deltas from baseline) ---
+            chi_des = atan2(this.dir_line(2), this.dir_line(1));  % desired heading
+            chi_cmd = chi_des + action(1);           % baseline heading + correction
+            h_cmd   = -this.pos_line(3) + action(2); % desired altitude + correction
+            Va_cmd  = this.V_trim + action(3);        % trim airspeed + correction
 
             % Build control_objectives from RL action
             % Format expected by your autopilot:
@@ -110,7 +114,11 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             reward = this.computeReward(obs);
 
             % --- Check termination ---
-            isDone = this.StepCount >= this.MaxSteps || abs(obs(1)) > 400;
+            % No early termination on cross-track — always run MaxSteps.
+            % A continuous boundary penalty in the reward handles large deviations
+            % without creating the bimodal episode-length distribution that
+            % destabilizes PPO batch composition.
+            isDone = this.StepCount >= this.MaxSteps;
             this.IsDone = isDone;
             info = [];
         end
@@ -118,11 +126,16 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
         function obs = reset(this)
             this.aircraft_state = this.aircraft_state_trim;
             % Randomize initial position slightly for robustness
-            this.aircraft_state(1) = this.aircraft_state_trim(1) + randn()*20;
-            this.aircraft_state(2) = this.aircraft_state_trim(2) + randn()*20;
+            this.aircraft_state(1) = this.aircraft_state_trim(1) + randn()*5;
+            this.aircraft_state(2) = this.aircraft_state_trim(2) + randn()*5;
+
+            chi_des = atan2(this.dir_line(2), this.dir_line(1));
+            this.aircraft_state(6) = chi_des + randn()*0.1;  % yaw ≈ line heading
+
             this.StepCount = 0;
             this.IsDone = false;
             obs = this.computeObservation();
+            fprintf('Reset: cross_track=%.1f, course_err=%.2f, h_err=%.1f\n', obs(1), obs(2), obs(3));
         end
     end
 
@@ -163,21 +176,28 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             course_err  = obs(2);
             h_err       = obs(3);
             Va_err      = obs(4);
-
-            % Dense reward: penalize errors
-            reward = - 0.01  * cross_track^2 ...
-                     - 1.0   * course_err^2  ...
-                     - 0.005 * h_err^2       ...
-                     - 0.1   * Va_err^2;
-
-            % Bonus for staying close to line
+        
+            % Normalized penalties (each ~O(1) at moderate error)
+            r_cross  = (cross_track / 100)^2;
+            r_course = (course_err  / 1.0)^2;
+            r_h      = (h_err       / 50)^2;
+            r_va     = (Va_err      / 3)^2;
+        
+            % Base survival reward
+            reward = 2.0 - 0.5*(r_cross + r_course + r_h + r_va);
+        
+            % Proximity bonus: reward tight tracking
             if abs(cross_track) < 5
                 reward = reward + 1.0;
             end
 
-            % Hard crash penalty
-            if abs(cross_track) > 400
-                reward = reward - 100;
+            % Continuous boundary penalty — grows quadratically past 30 m.
+            % Replaces the old hard termination at 50 m: the critic now sees
+            % a smooth cost signal instead of a cliff, keeping episode lengths
+            % uniform and stabilizing batch composition.
+            if abs(cross_track) > 30
+                excess = abs(cross_track) - 30;
+                reward = reward - 0.05 * excess^2;
             end
         end
     end

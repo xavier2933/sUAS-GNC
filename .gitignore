@@ -25,3 +25,4 @@ Thumbs.db
 # MATLAB project internals (DO NOT TRACK)
 resources/project/
 *.prj.user
+final/saved_agents/*
