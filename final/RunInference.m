@@ -18,7 +18,8 @@ addpath('C:\Users\xavie\MATLAB\Projects\5128\hw7');
 %% ─────────────────────────────────────────────
 %%  CONFIG  ← change this to load a specific agent
 %% ─────────────────────────────────────────────
-AGENT_FILE = 'saved_agents/run_0413_2127/Agent200.mat';   % e.g. 'saved_agents/Agent550.mat'  — leave '' to auto-detect
+AGENT_FILE = 'saved_agents/run_0414_1304/Agent3637.mat';   % e.g. 'saved_agents/Agent550.mat'  — leave '' to auto-detect
+% not bad agent AGENT_FILE = 'saved_agents/run_0414_1304/Agent1056.mat';   % e.g. 'saved_agents/Agent550.mat'  — leave '' to auto-detect
 
 %% ─────────────────────────────────────────────
 %%  1. Load Agent
@@ -59,7 +60,7 @@ Ts        = env.Ts;
 MaxSteps  = env.MaxSteps;
 
 rl_state  = zeros(12, MaxSteps+1);  rl_state(:,1)  = env.aircraft_state;
-rl_obs    = zeros(4,  MaxSteps+1);  rl_obs(:,1)    = obs0;
+rl_obs    = zeros(6,  MaxSteps+1);  rl_obs(:,1)    = obs0;  % 6: base states + 2 rates
 rl_action = zeros(3,  MaxSteps);
 rl_reward = zeros(1,  MaxSteps);
 
