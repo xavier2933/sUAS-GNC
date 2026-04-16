@@ -18,7 +18,8 @@ addpath('C:\Users\xavie\MATLAB\Projects\5128\hw7');
 %% ─────────────────────────────────────────────
 %%  CONFIG  ← change this to load a specific agent
 %% ─────────────────────────────────────────────
-AGENT_FILE = 'saved_agents/run_0414_1304/Agent3637.mat';   % e.g. 'saved_agents/Agent550.mat'  — leave '' to auto-detect
+%AGENT_FILE = 'saved_agents/run_0414_1304/Agent3637.mat';   % e.g. 'saved_agents/Agent550.mat'  — leave '' to auto-detect
+AGENT_FILE = 'saved_agents/run_0415_2037/Agent122.mat';
 % not bad agent AGENT_FILE = 'saved_agents/run_0414_1304/Agent1056.mat';   % e.g. 'saved_agents/Agent550.mat'  — leave '' to auto-detect
 
 %% ─────────────────────────────────────────────
@@ -46,7 +47,7 @@ end
 %% ─────────────────────────────────────────────
 env = StraightLineEnv();
 
-rng(0);                      % fix seed so both runs share the same reset
+rng('shuffle');               % new random IC each run; both RL & SLC still share it
 obs0 = reset(env);
 state0 = env.aircraft_state; % shared IC for RL and SLC
 
