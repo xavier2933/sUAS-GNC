@@ -25,7 +25,8 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
         aircraft_state
         wind_inertial = [0;0;0]
         StepCount = 0
-        prev_obs = zeros(4,1)   % last raw 4-state obs — used for finite-difference rates
+        prev_obs    = zeros(4,1)   % last raw 4-state obs — used for finite-difference rates
+        prev_action = zeros(3,1)   % last action — used for smoothness penalty
     end
 
     properties (Access = protected)
@@ -39,9 +40,9 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             %  d_cross_track/dt (m/s), d_course_err/dt (rad/s)]
             % The two rate terms give the policy derivative information so it
             % can damp its own corrections rather than oscillating.
-            obsInfo = rlNumericSpec([6 1], ...
-                'LowerLimit', [-500; -pi; -200; -10; -20;   -0.5], ...
-                'UpperLimit', [ 500;  pi;  200;  10;  20;    0.5]);
+            obsInfo = rlNumericSpec([9 1], ...
+                'LowerLimit', [-500; -pi; -200; -10; -20;   -0.5; -pi/6; -30; -3], ...
+                'UpperLimit', [ 500;  pi;  200;  10;  20;    0.5;  pi/6;  30;  3]);
             obsInfo.Name = 'observations';
 
             % --- Define action space ---
@@ -111,6 +112,10 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             this.aircraft_state = YOUT(end,:)';
             this.StepCount = this.StepCount + 1;
 
+            % --- Action smoothness (before updating prev_action) ---
+            delta_action = action(:) - this.prev_action;
+            this.prev_action = action(:);
+
             % --- Compute raw 4-state observation ---
             raw_obs = this.computeObservation();
 
@@ -118,33 +123,39 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             d_cross  = (raw_obs(1) - this.prev_obs(1)) / this.Ts;  % cross-track rate (m/s)
             d_course = (raw_obs(2) - this.prev_obs(2)) / this.Ts;  % course rate     (rad/s)
             this.prev_obs = raw_obs;
-            obs = [raw_obs; d_cross; d_course];   % 6-element obs returned to agent
+            obs = [raw_obs; d_cross; d_course; this.prev_action(:)];   % 9-element obs returned to agent
 
-            % --- Compute reward (uses only base 4 states) ---
-            reward = this.computeReward(raw_obs);
+            % --- Compute reward ---
+            reward = this.computeReward(raw_obs, delta_action);
 
             % --- Check termination ---
             isDone = this.StepCount >= this.MaxSteps || abs(raw_obs(1)) > 50;
+            
+            if isDone && this.StepCount < this.MaxSteps
+                % The agent is "learning to die". It figured out that staying alive 
+                % poorly yields -3000 points, but crashing out the 50m bound in 20 
+                % steps only yields -20 points! We must make death worse than suffering.
+                reward = reward - 1000; 
+            end
+            
             this.IsDone = isDone;
             info = [];
         end
 
         function obs = reset(this)
             this.aircraft_state = this.aircraft_state_trim;
-            % Wider IC perturbation so agent learns to recover, not just fine-tune.
-            % ±20 m in position (~15-25 m typical cross-track at reset)
-            % ±0.2 rad in yaw (vs old ±0.1) to vary initial course error more
-            this.aircraft_state(1) = this.aircraft_state_trim(1) + randn()*12;
-            this.aircraft_state(2) = this.aircraft_state_trim(2) + randn()*12;
+            this.aircraft_state(1) = this.aircraft_state_trim(1) + randn()*5;
+            this.aircraft_state(2) = this.aircraft_state_trim(2) + randn()*5;
 
             chi_des = atan2(this.dir_line(2), this.dir_line(1));
-            this.aircraft_state(6) = chi_des + randn()*0.15;
+            this.aircraft_state(6) = chi_des + randn()*0.05;
 
-            this.StepCount = 0;
-            this.IsDone = false;
+            this.StepCount   = 0;
+            this.IsDone      = false;
+            this.prev_action = zeros(3,1);  % reset smoothness tracker
             raw_obs = this.computeObservation();
-            this.prev_obs = raw_obs;     % seed prev_obs so first step rate = 0
-            obs = [raw_obs; 0; 0];       % zero initial rates (at rest in trim)
+            this.prev_obs = raw_obs;        % seed prev_obs so first step rate = 0
+            obs = [raw_obs; 0; 0; this.prev_action(:)];          % zero initial rates and actions
             fprintf('Reset: cross_track=%.1f, course_err=%.2f, h_err=%.1f\n', raw_obs(1), raw_obs(2), raw_obs(3));
         end
     end
@@ -156,10 +167,14 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
 
             % Cross-track error (signed distance from line)
             dp = p - this.pos_line;
+            dn = norm(dp);
             cross_track = norm(dp - dot(dp, this.dir_line)*this.dir_line);
-            % Sign: positive = left of line
-            side = cross(this.dir_line, dp/norm(dp));
-            cross_track = sign(side(3)) * cross_track;
+            % Sign: positive = left of line. Guard against dp≈0 (NaN if aircraft
+            % passes exactly through pos_line) — keep previous sign in that case.
+            if dn > 1e-6
+                side = cross(this.dir_line, dp/dn);
+                cross_track = sign(side(3)) * cross_track;
+            end
 
             % Course error
             u = this.aircraft_state(7); v = this.aircraft_state(8);
@@ -181,25 +196,43 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             obs = [cross_track; course_err; h_err; Va_err];
         end
 
-        function reward = computeReward(this, obs)
+        function reward = computeReward(this, obs, delta_action)
             cross_track = obs(1);
             course_err  = obs(2);
             h_err       = obs(3);
             Va_err      = obs(4);
-        
-            % Normalized penalties (each ~O(1) at moderate error)
-            r_cross  = (cross_track / 100)^2;
-            r_course = (course_err  / 1.0)^2;
-            r_h      = (h_err       / 50)^2;
-            r_va     = (Va_err      / 3)^2;
-        
-            % Base survival reward — agent always wants to keep flying
-            reward = 1.0 - 0.5*(r_cross + r_course + r_h + r_va);
-        
-            % Proximity bonus
-            if abs(cross_track) < 5
-                reward = reward + 1.0;
-            end
+
+            % --- State error penalties ---
+            % Va error removed — irrelevant for cross-track guidance with no
+            % stall/fuel model.  Va action is implicitly bounded by action
+            % limits (±3 m/s) and the smoothness penalty.
+            r_cross  = (cross_track / 25)^2;
+            r_course = (course_err  / 0.5)^2;
+            r_h      = (h_err       / 15)^2;
+
+            % --- Action smoothness penalty ---
+            % Weight increased 0.2→0.4 to damp the ±10° course oscillations
+            % seen in inference (agent was oscillating heading because cross-track
+            % reward outweighed the smoothness cost of reversals).
+            act_lim  = [pi/6; 30; 3];
+            r_smooth = sum((delta_action ./ act_lim).^2);
+            
+            % --- Action magnitude penalty ---
+            % Penalize keeping offsets far from baseline trim, pulling actions to zero
+            current_action = this.prev_action; % prev_action was just updated to action in step()
+            r_mag = sum((current_action ./ act_lim).^2);
+
+            % Base survival reward
+            reward = 1.0 ...
+                - 0.4*(r_cross + r_course + r_h) ...
+                - 0.4*r_smooth ...
+                - 0.1*r_mag;
+
+            % Smooth proximity bonus — Gaussian centred on the line.
+            sigma  = 5.0;
+            reward = reward + exp(-0.5*(cross_track/sigma)^2);
+
+
         end
     end
 end

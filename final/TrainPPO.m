@@ -76,18 +76,25 @@ agentOpts = rlPPOAgentOptions( ...
     'ActorOptimizerOptions',    rlOptimizerOptions('LearnRate', 3e-5), ...
     'CriticOptimizerOptions',   rlOptimizerOptions('LearnRate', 1e-3));
 
-%agent = rlPPOAgent(actor, critic, agentOpts);
-% 
-data  = load('saved_agents/run_0415_1938/Agent480.mat');  % pick the best one
-agent = data.saved_agent; % maybe saved_agent? or agent
+% Warm-start from the best checkpoint of the interrupted run.
+% getActor/getCritic extracts the learned weights; rlPPOAgent rebinds them
+% with the agentOpts declared above so all hyperparameters actually apply.
+data        = load('saved_agents/run_0415_2145/Agent1371.mat');  % ← update to your best checkpoint
+savedActor  = getActor(data.saved_agent);
+savedCritic = getCritic(data.saved_agent);
+agent       = rlPPOAgent(savedActor, savedCritic, agentOpts);  % new opts, old weights
+
+% --- Train from scratch (uncomment if you want a clean slate) ---
+% agent = rlPPOAgent(actor, critic, agentOpts);
 
 % Each training run gets its own subfolder so files never mix or overwrite.
-% Files inside will be Agent1.mat, Agent2.mat... but scoped to this run.
 runTag   = datestr(now, 'mmdd_HHMM');          % e.g. '0413_1945'
 agentDir = fullfile('saved_agents', ['run_' runTag]);
 mkdir(agentDir);
 
 %% Training options
+% SaveAgentValue lowered: smoothness penalty reduces achievable per-episode
+% reward vs the old reward function, so 3600 would never trigger.
 trainOpts = rlTrainingOptions( ...
     'MaxEpisodes',          4000, ...
     'MaxStepsPerEpisode',   env.MaxSteps, ...
@@ -97,7 +104,7 @@ trainOpts = rlTrainingOptions( ...
     'Verbose',              true, ...
     'Plots',                'training-progress', ...
     'SaveAgentCriteria',    'EpisodeReward', ...
-    'SaveAgentValue',       3600, ...      % only checkpoint genuinely good episodes
+    'SaveAgentValue',       2800, ...      % lowered from 3600 to match new reward scale
     'SaveAgentDirectory',   agentDir);
 
 %% Train
