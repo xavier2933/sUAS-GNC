@@ -124,7 +124,7 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             reward = this.computeReward(raw_obs);
 
             % --- Check termination ---
-            isDone = this.StepCount >= this.MaxSteps || abs(raw_obs(1)) > 50;
+            isDone = this.StepCount >= this.MaxSteps || abs(raw_obs(1)) > 200 || abs(raw_obs(2)) > pi/2;
             this.IsDone = isDone;
             info = [];
         end
@@ -134,11 +134,11 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             % Wider IC perturbation so agent learns to recover, not just fine-tune.
             % ±20 m in position (~15-25 m typical cross-track at reset)
             % ±0.2 rad in yaw (vs old ±0.1) to vary initial course error more
-            this.aircraft_state(1) = this.aircraft_state_trim(1) + randn()*12;
-            this.aircraft_state(2) = this.aircraft_state_trim(2) + randn()*12;
+            this.aircraft_state(1) = this.aircraft_state_trim(1) + randn()*25;
+            this.aircraft_state(2) = this.aircraft_state_trim(2) + randn()*25;
 
             chi_des = atan2(this.dir_line(2), this.dir_line(1));
-            this.aircraft_state(6) = chi_des + randn()*0.15;
+            this.aircraft_state(6) = chi_des + randn()*0.25;
 
             this.StepCount = 0;
             this.IsDone = false;
@@ -200,6 +200,7 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             if abs(cross_track) < 5
                 reward = reward + 1.0;
             end
+            reward = max(reward, -2.0);
         end
     end
 end

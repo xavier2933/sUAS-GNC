@@ -78,7 +78,7 @@ agentOpts = rlPPOAgentOptions( ...
 
 %agent = rlPPOAgent(actor, critic, agentOpts);
 % 
-data  = load('saved_agents/run_0415_1938/Agent480.mat');  % pick the best one
+data  = load('saved_agents/run_0415_2037/Agent122.mat');  % pick the best one
 agent = data.saved_agent; % maybe saved_agent? or agent
 
 % Each training run gets its own subfolder so files never mix or overwrite.
