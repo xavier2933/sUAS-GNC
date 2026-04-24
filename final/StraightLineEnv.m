@@ -26,6 +26,7 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
         wind_inertial = [0;0;0]
         StepCount = 0
         prev_obs = zeros(4,1)   % last raw 4-state obs — used for finite-difference rates
+        difficulty = 0          % curriculum stage [0=easy, 1=hard]; set from TrainPPO.m
     end
 
     properties (Access = protected)
@@ -39,9 +40,11 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             %  d_cross_track/dt (m/s), d_course_err/dt (rad/s)]
             % The two rate terms give the policy derivative information so it
             % can damp its own corrections rather than oscillating.
+            % Obs are normalized to [-1, 1] in step() and reset() before
+            % being returned to the agent, so bounds are ±1 here.
             obsInfo = rlNumericSpec([6 1], ...
-                'LowerLimit', [-500; -pi; -200; -10; -20;   -0.5], ...
-                'UpperLimit', [ 500;  pi;  200;  10;  20;    0.5]);
+                'LowerLimit', -ones(6,1), ...
+                'UpperLimit',  ones(6,1));
             obsInfo.Name = 'observations';
 
             % --- Define action space ---
@@ -118,7 +121,9 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             d_cross  = (raw_obs(1) - this.prev_obs(1)) / this.Ts;  % cross-track rate (m/s)
             d_course = (raw_obs(2) - this.prev_obs(2)) / this.Ts;  % course rate     (rad/s)
             this.prev_obs = raw_obs;
-            obs = [raw_obs; d_cross; d_course];   % 6-element obs returned to agent
+            % Normalize to [-1, 1] — keeps all inputs O(1) for the network
+            obs = [raw_obs(1)/500; raw_obs(2)/pi; raw_obs(3)/200; raw_obs(4)/10; ...
+                   d_cross/20;    d_course/0.5];
 
             % --- Compute reward (uses only base 4 states) ---
             reward = this.computeReward(raw_obs);
@@ -131,21 +136,29 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
 
         function obs = reset(this)
             this.aircraft_state = this.aircraft_state_trim;
-            % Wider IC perturbation so agent learns to recover, not just fine-tune.
-            % ±20 m in position (~15-25 m typical cross-track at reset)
-            % ±0.2 rad in yaw (vs old ±0.1) to vary initial course error more
-            this.aircraft_state(1) = this.aircraft_state_trim(1) + randn()*25;
-            this.aircraft_state(2) = this.aircraft_state_trim(2) + randn()*25;
+
+            % Curriculum-scaled ICs — controlled via env.difficulty in TrainPPO.m
+            %   difficulty=0.00 : sig_pos= 15m,  sig_chi=0.15 rad (~8.6°)
+            %   difficulty=0.33 : sig_pos= 55m,  sig_chi=0.23 rad
+            %   difficulty=0.67 : sig_pos= 95m,  sig_chi=0.32 rad
+            %   difficulty=1.00 : sig_pos=135m,  sig_chi=0.40 rad (~23°)
+            sig_pos = 15  + 120 * this.difficulty;
+            sig_chi = 0.15 + 0.25 * this.difficulty;
+
+            this.aircraft_state(1) = this.aircraft_state_trim(1) + randn()*sig_pos;
+            this.aircraft_state(2) = this.aircraft_state_trim(2) + randn()*sig_pos;
 
             chi_des = atan2(this.dir_line(2), this.dir_line(1));
-            this.aircraft_state(6) = chi_des + randn()*0.25;
+            this.aircraft_state(6) = chi_des + randn()*sig_chi;
 
             this.StepCount = 0;
             this.IsDone = false;
             raw_obs = this.computeObservation();
-            this.prev_obs = raw_obs;     % seed prev_obs so first step rate = 0
-            obs = [raw_obs; 0; 0];       % zero initial rates (at rest in trim)
-            fprintf('Reset: cross_track=%.1f, course_err=%.2f, h_err=%.1f\n', raw_obs(1), raw_obs(2), raw_obs(3));
+            this.prev_obs = raw_obs;   % seed so first step rate = 0
+            % Return normalized obs with zero initial rates
+            obs = [raw_obs(1)/500; raw_obs(2)/pi; raw_obs(3)/200; raw_obs(4)/10; 0; 0];
+            fprintf('Reset: cross_track=%.1f m | course_err=%.2f rad | h_err=%.1f m  [difficulty=%.2f]\n', ...
+                raw_obs(1), raw_obs(2), raw_obs(3), this.difficulty);
         end
     end
 
@@ -186,21 +199,25 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             course_err  = obs(2);
             h_err       = obs(3);
             Va_err      = obs(4);
-        
-            % Normalized penalties (each ~O(1) at moderate error)
-            r_cross  = (cross_track / 100)^2;
-            r_course = (course_err  / 1.0)^2;
-            r_h      = (h_err       / 50)^2;
-            r_va     = (Va_err      / 3)^2;
-        
-            % Base survival reward — agent always wants to keep flying
-            reward = 1.0 - 0.5*(r_cross + r_course + r_h + r_va);
-        
-            % Proximity bonus
+
+            % Exponential (Gaussian-shaped) penalties — smooth gradient at ALL
+            % error magnitudes, including the large deviations from expanded ICs.
+            % Natural per-step floor is ~-0.8 (no explicit clipping needed).
+            %
+            %  cross_track: σ ≈ 70 m  (5000 = 70.7²),  max penalty -1.0
+            %  course_err : σ ≈ 0.7 rad (0.5 = 0.707²), max penalty -0.5
+            %  h_err      : σ ≈ 50 m  (2500 = 50²),    max penalty -0.2
+            %  Va_err     : σ ≈ 3 m/s (9 = 3²),        max penalty -0.1
+            reward = 1.0 ...
+                - 1.0 * (1 - exp(-cross_track^2 / 5000)) ...
+                - 0.5 * (1 - exp(-course_err^2  / 0.5))  ...
+                - 0.2 * (1 - exp(-h_err^2       / 2500)) ...
+                - 0.1 * (1 - exp(-Va_err^2      / 9));
+
+            % Proximity bonus — strong on-line incentive
             if abs(cross_track) < 5
                 reward = reward + 1.0;
             end
-            reward = max(reward, -2.0);
         end
     end
 end

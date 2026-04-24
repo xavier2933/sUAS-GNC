@@ -6,8 +6,6 @@
 %   1. AGENT_FILE (set below) — explicit override, e.g. 'saved_agents/Agent550.mat'
 %   2. saved_agents/Agent<N>.mat — highest-numbered checkpoint (auto-detected)
 %   3. ppo_slg_agent.mat        — end-of-run save from TrainPPO.m
-%
-% NOTE: Agents saved before the residual-action changes (April 2026) used an
 % absolute action space [chi, h, Va] and will produce incorrect behavior in
 % the updated StraightLineEnv. Retrain with TrainPPO.m after those changes.
 
