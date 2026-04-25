@@ -70,7 +70,7 @@ agentOpts = rlPPOAgentOptions( ...
     'EntropyLossWeight',        0.01, ...   % back to 0.01; 0.02 added variance in high-reward regime
     'NumEpoch',                 3, ...      % was 5; fewer reuse passes per update
     'MiniBatchSize',            64, ...
-    'DiscountFactor',           0.99, ...
+    'DiscountFactor',           0.995, ...  % 0.99 (before) → 0.995: horizon 100→200 steps; needed for long recovery trajectories.
     'AdvantageEstimateMethod',  'gae', ...
     'GAEFactor',                0.95, ...
     'ActorOptimizerOptions',    rlOptimizerOptions('LearnRate', 3e-5), ...
@@ -83,8 +83,9 @@ agentOpts = rlPPOAgentOptions( ...
 %   3. Set CHECKPOINT_FILE to the best Agent*.mat from the completed stage
 %      e.g. 'saved_agents/run_0423_1045/stage1/Agent580.mat'
 %   4. Re-run — the script will load the checkpoint and skip completed stages
-START_STAGE      = 2;    % which curriculum stage to begin at (1 = fresh start)
-CHECKPOINT_FILE  = 'saved_agents/run_0423_1023/stage1/Agent497.mat';   % '' = build fresh agent; set path to resume from checkpoint
+START_STAGE      = 1;    % which curriculum stage to begin at (1 = fresh start)
+%CHECKPOINT_FILE  = 'saved_agents/run_0423_1023/stage1/Agent497.mat';   % '' = build fresh agent; set path to resume from checkpoint
+CHECKPOINT_FILE = '';
 %% ────────────────────────────────────────────────────────────────────────
 
 if isempty(CHECKPOINT_FILE)
@@ -111,8 +112,8 @@ mkdir(agentDir);
 %
 % Each stage runs until MaxEpisodes OR StopTrainingValue is hit,
 % then advances to the next difficulty level.
-difficulties   = [0.00,  0.33,  0.67,  1.00];
-maxEpsPerStage = [ 600,   800,   800,  2000];
+difficulties   = [0.8];
+maxEpsPerStage = [ 1400];
 
 for s = START_STAGE:numel(difficulties)
     env.difficulty = difficulties(s);

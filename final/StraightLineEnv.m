@@ -72,7 +72,7 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             this.chi_inf = 10 * pi/180;
 
             % Load gains
-            load('ttwistor_gains_slc', '-mat');
+            load('ttwistor_gains_feed', '-mat');
             this.control_gain_struct = control_gain_struct;  % adjust to match your gains struct variable name
             this.control_gain_struct.Ts = this.Ts;
             this.control_gain_struct.takeoff_height = -999;     % aircraft never below this → takeoff never triggers
@@ -102,7 +102,7 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             wind_angles = utils.AirRelativeVelocityVectorToWindAngles(air_rel);
 
             % --- Run autopilot (SLC inner loop) ---
-            [control_out, ~] = frewhw6utils.SimpleSLCAutopilot( ...
+            [control_out, ~] = hw7utils.SLCWithFeedForwardAutopilot( ...
                 this.Ts * i, this.aircraft_state, wind_angles, ...
                 control_objectives, this.control_gain_struct);
 
@@ -125,11 +125,14 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             obs = [raw_obs(1)/500; raw_obs(2)/pi; raw_obs(3)/200; raw_obs(4)/10; ...
                    d_cross/20;    d_course/0.5];
 
-            % --- Compute reward (uses only base 4 states) ---
-            reward = this.computeReward(raw_obs);
+            % --- Compute reward (uses base 4 states + cross-track rate) ---
+            reward = this.computeReward(raw_obs, d_cross);
 
             % --- Check termination ---
-            isDone = this.StepCount >= this.MaxSteps || abs(raw_obs(1)) > 200 || abs(raw_obs(2)) > pi/2;
+            % Termination at 400 m: wide enough for 3σ of difficulty=1 ICs
+            % (σ_pos=135m → 3σ=405m). Keeps learning signal for hard resets
+            % rather than immediately terminating.
+            isDone = this.StepCount >= this.MaxSteps || abs(raw_obs(1)) > 400; % 200 before
             this.IsDone = isDone;
             info = [];
         end
@@ -138,15 +141,18 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             this.aircraft_state = this.aircraft_state_trim;
 
             % Curriculum-scaled ICs — controlled via env.difficulty in TrainPPO.m
-            %   difficulty=0.00 : sig_pos= 15m,  sig_chi=0.15 rad (~8.6°)
-            %   difficulty=0.33 : sig_pos= 55m,  sig_chi=0.23 rad
-            %   difficulty=0.67 : sig_pos= 95m,  sig_chi=0.32 rad
-            %   difficulty=1.00 : sig_pos=135m,  sig_chi=0.40 rad (~23°)
-            sig_pos = 15  + 120 * this.difficulty;
+            %   difficulty=0.00 : sig_pos=15m,  sig_chi=0.15 rad,  sig_h= 5m
+            %   difficulty=0.33 : sig_pos=55m,  sig_chi=0.23 rad,  sig_h=11m
+            %   difficulty=0.67 : sig_pos=95m,  sig_chi=0.32 rad,  sig_h=18m
+            %   difficulty=1.00 : sig_pos=135m, sig_chi=0.40 rad,  sig_h=25m
+            sig_pos = 15  + 120  * this.difficulty;
             sig_chi = 0.15 + 0.25 * this.difficulty;
+            sig_h   = 5   + 20   * this.difficulty;   % altitude IC spread (m)
 
             this.aircraft_state(1) = this.aircraft_state_trim(1) + randn()*sig_pos;
             this.aircraft_state(2) = this.aircraft_state_trim(2) + randn()*sig_pos;
+            % Altitude perturbation: state(3) is NED-down, so subtract to increase altitude
+            this.aircraft_state(3) = this.aircraft_state_trim(3) - randn()*sig_h;
 
             chi_des = atan2(this.dir_line(2), this.dir_line(1));
             this.aircraft_state(6) = chi_des + randn()*sig_chi;
@@ -194,29 +200,59 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             obs = [cross_track; course_err; h_err; Va_err];
         end
 
-        function reward = computeReward(this, obs)
+        function reward = computeReward(this, obs, d_cross)
             cross_track = obs(1);
             course_err  = obs(2);
             h_err       = obs(3);
             Va_err      = obs(4);
+            ct = abs(cross_track);
 
-            % Exponential (Gaussian-shaped) penalties — smooth gradient at ALL
-            % error magnitudes, including the large deviations from expanded ICs.
-            % Natural per-step floor is ~-0.8 (no explicit clipping needed).
+            % ── CROSS-TRACK PENALTY ────────────────────────────────────────────────
+            % Piecewise: quadratic within 50 m (tight precision gradient),
+            % then linear continuation so gradient stays non-zero out to 200 m
+            % instead of saturating near zero (old pure-exponential behaviour).
+            if ct <= 50
+                r_cross = 1.0 * (ct / 50)^2;                        % 0 → 1 within 50 m
+            else
+                r_cross = 1.0 * min(1.0, 0.5 + (ct - 50) / 300);   % linear, caps at 1.0
+            end
+
+            % ── GUIDANCE REWARD (blended far/near) ────────────────────────────────
+            % The agent is free to discover its own approach law.
+            % We do NOT encode the SLC’s atan approach here — instead, we
+            % reward the OUTCOME (convergence) far from the line and
+            % reward PRECISION (course alignment) near the line.
             %
-            %  cross_track: σ ≈ 70 m  (5000 = 70.7²),  max penalty -1.0
-            %  course_err : σ ≈ 0.7 rad (0.5 = 0.707²), max penalty -0.5
-            %  h_err      : σ ≈ 50 m  (2500 = 50²),    max penalty -0.2
-            %  Va_err     : σ ≈ 3 m/s (9 = 3²),        max penalty -0.1
-            reward = 1.0 ...
-                - 1.0 * (1 - exp(-cross_track^2 / 5000)) ...
-                - 0.5 * (1 - exp(-course_err^2  / 0.5))  ...
-                - 0.2 * (1 - exp(-h_err^2       / 2500)) ...
-                - 0.1 * (1 - exp(-Va_err^2      / 9));
+            % blend = 1  near the line (≤ ~35 m) → course alignment matters
+            % blend = 0  far from line           → closing speed matters
+            blend = exp(-ct^2 / 1250);   % σ ≈ 35 m
 
-            % Proximity bonus — strong on-line incentive
-            if abs(cross_track) < 5
-                reward = reward + 1.0;
+            % Closing speed: positive when moving toward line, negative when diverging
+            closing = -sign(cross_track) * d_cross;   % m/s toward line
+            r_closing = (1 - blend) * 0.5 * tanh(closing / 5);
+            % +0.5 when converging at 5 m/s, -0.5 when diverging at 5 m/s
+
+            % Course alignment: only counts near the line
+            r_course = -blend * 0.5 * (1 - exp(-course_err^2 / 0.3));
+            % 0 when on the line with correct course, -0.5 at large course_err
+
+            % ── ALTITUDE & AIRSPEED ───────────────────────────────────────────────
+            r_h  = 0.2 * (1 - exp(-h_err^2  / 2500));
+            r_va = 0.1 * (1 - exp(-Va_err^2 / 9));
+
+            % ── TOTAL ───────────────────────────────────────────────────────
+            % Max per step: 1.0 - 0 + 0 + 0 - 0 - 0 + 1.0 = 2.0  (on line, converging)
+            % Floor (200m, diverging at 5 m/s): 1.0 - 1.0 - 0.5 - 0 - 0.2 - 0.1 = -0.8
+            reward = 1.0 - r_cross + r_closing + r_course - r_h - r_va;
+
+            % Two-tier proximity bonus — incentivises pushing all the way to 1 m,
+            % not just loitering at 4.9 m. Max per-step is still 2.0.
+            %   |ct| < 5 m : +0.25  (approach zone — partial credit)
+            %   |ct| < 1 m : +1.00  (tight tracking — full bonus; 1.25 total)
+            if ct < 1.0
+                reward = reward + 1.0;    % full tight-tracking bonus
+            elseif ct < 5.0
+                reward = reward + 0.25;   % partial approach-zone bonus
             end
         end
     end
