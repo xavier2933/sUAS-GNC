@@ -27,7 +27,18 @@ addpath('C:\Users\xavie\MATLAB\Projects\5128\hw7');
 % AGENT_FILE = 'saved_agents/run_0423_2200/stage2/Agent116.mat'; % GOOD
 AGENT_FILE = 'saved_agents/run_0424_1942/stage1/Agent508.mat';
 
-IC_DIFFICULTY = 1.0;  % IC spread for inference: 0=easy (~15 m), 1=hard (~135 m)
+IC_DIFFICULTY = 0.5;  % IC spread for inference: 0=easy (~15 m), 1=hard (~135 m)
+
+% --- AIRCRAFT MASS OVERRIDE ---
+OVERRIDE_MASS = false; % Set to true to test a different mass
+TEST_MASS_KG  = 6.5;   % [kg] New mass (nominal ttwistor is 5.74 kg)
+
+% --- INITIAL CONDITION TWEAKS ---
+USE_FIXED_SEED = true; % Set to true for repeatable randomly-generated ICs
+FIXED_SEED_VAL = 42;   % The random seed to use
+
+% --- WIND OVERRIDE ---
+INERTIAL_WIND  = [0; 0; 0]; % [North, East, Down] m/s steady wind (e.g., [0; 5; 0] for crosswind)
 
 %% ─────────────────────────────────────────────
 %%  1. Load Agent
@@ -53,8 +64,23 @@ end
 %% ─────────────────────────────────────────────
 env = StraightLineEnv();
 env.difficulty = IC_DIFFICULTY;   % controls IC spread (matches training stage)
+env.wind_inertial = INERTIAL_WIND; % apply steady wind
 
-rng('shuffle');                   % fresh random IC each run
+if OVERRIDE_MASS
+    env.aircraft_parameters.m = TEST_MASS_KG;
+    env.aircraft_parameters.W = TEST_MASS_KG * env.aircraft_parameters.g;
+    % Recalculate trim for the new mass
+    trim_def = [env.V_trim; 0; 1805];
+    [env.aircraft_state_trim, env.control_input_trim, ...
+     env.trim_variables, ~] = utils.CalculateTrim(trim_def, env.aircraft_parameters);
+    fprintf('OVERRIDING MASS: Set to %.2f kg in PPO Environment (recalculated trim)\n', TEST_MASS_KG);
+end
+
+if USE_FIXED_SEED
+    rng(FIXED_SEED_VAL);          % deterministic random IC for comparisons
+else
+    rng('shuffle');               % fresh random IC each run
+end
 obs0   = reset(env);              % returns NORMALISED 6-element obs
 state0 = env.aircraft_state;     % shared IC for RL and SLC
 
@@ -137,6 +163,13 @@ fprintf('RL rollout complete — %d steps (%.0f s)  |  total reward: %.1f\n', ..
 %%  4. SLC Autopilot Rollout  (same IC, full EOM)
 %% ─────────────────────────────────────────────
 aircraft_parameters = utils.ttwistor();
+
+if OVERRIDE_MASS
+    aircraft_parameters.m = TEST_MASS_KG;
+    aircraft_parameters.W = TEST_MASS_KG * aircraft_parameters.g;
+    fprintf('OVERRIDING MASS: Set to %.2f kg in SLC Autopilot\n', TEST_MASS_KG);
+end
+
 kpath         = env.kpath;
 chi_inf       = env.chi_inf;
 wind_inertial = env.wind_inertial;
