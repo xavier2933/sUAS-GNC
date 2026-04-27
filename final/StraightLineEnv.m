@@ -10,7 +10,7 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
         % Guidance line
         pos_line = [0; 0; -1805]
         dir_line  % normalized
-        kpath = 0.01
+        kpath = 0.15 % 0.01
         chi_inf   % max course error (rad)
         V_trim = 18
         
@@ -211,11 +211,15 @@ classdef StraightLineEnv < rl.env.MATLABEnvironment
             % Piecewise: quadratic within 50 m (tight precision gradient),
             % then linear continuation so gradient stays non-zero out to 200 m
             % instead of saturating near zero (old pure-exponential behaviour).
-            if ct <= 50
-                r_cross = 1.0 * (ct / 50)^2;                        % 0 → 1 within 50 m
-            else
-                r_cross = 1.0 * min(1.0, 0.5 + (ct - 50) / 300);   % linear, caps at 1.0
-            end
+
+            %%%% OLD, WORKING
+            % if ct <= 50
+            %     r_cross = 1.0 * (ct / 50)^2;                        % 0 → 1 within 50 m
+            % else
+            %     r_cross = 1.0 * min(1.0, 0.5 + (ct - 50) / 300);   % linear, caps at 1.0
+            % end
+            r_cross = min(1.0, ct / 200); % new for continuity
+
 
             % ── GUIDANCE REWARD (blended far/near) ────────────────────────────────
             % The agent is free to discover its own approach law.

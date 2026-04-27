@@ -27,15 +27,15 @@ addpath('C:\Users\xavie\MATLAB\Projects\5128\hw7');
 % AGENT_FILE = 'saved_agents/run_0423_2200/stage2/Agent116.mat'; % GOOD
 AGENT_FILE = 'saved_agents/run_0424_1942/stage1/Agent508.mat';
 
-IC_DIFFICULTY = 0.5;  % IC spread for inference: 0=easy (~15 m), 1=hard (~135 m)
+IC_DIFFICULTY = 0.2;  % IC spread for inference: 0=easy (~15 m), 1=hard (~135 m)
 
 % --- AIRCRAFT MASS OVERRIDE ---
 OVERRIDE_MASS = false; % Set to true to test a different mass
-TEST_MASS_KG  = 6.5;   % [kg] New mass (nominal ttwistor is 5.74 kg)
+TEST_MASS_KG  = 4.5;   % [kg] New mass (nominal ttwistor is 5.74 kg)
 
 % --- INITIAL CONDITION TWEAKS ---
 USE_FIXED_SEED = true; % Set to true for repeatable randomly-generated ICs
-FIXED_SEED_VAL = 42;   % The random seed to use
+FIXED_SEED_VAL = 69;   % The random seed to use 69 for below line, 42 for above
 
 % --- WIND OVERRIDE ---
 INERTIAL_WIND  = [0; 0; 0]; % [North, East, Down] m/s steady wind (e.g., [0; 5; 0] for crosswind)
@@ -174,7 +174,7 @@ kpath         = env.kpath;
 chi_inf       = env.chi_inf;
 wind_inertial = env.wind_inertial;
 
-load('ttwistor_gains_slc', '-mat');
+load('ttwistor_gains_feed', '-mat');
 control_gain_struct.Ts                = Ts;
 control_gain_struct.takeoff_height   = -999;
 control_gain_struct.height_hold_limit = 99999;
@@ -193,7 +193,7 @@ for i = 1:MaxSteps
     control_objectives = utils.StraightLineGuidance( ...
         pos_line, dir_line, slc_state(1:3,i), kpath, chi_inf, V_trim);
 
-    [control_out, ~] = frewhw6utils.SimpleSLCAutopilot( ...
+    [control_out, ~] = hw7utils.SLCWithFeedForwardAutopilot( ...
         Ts*(i-1), slc_state(:,i), wind_angles, control_objectives, control_gain_struct);
 
     [~, YOUT] = ode45(@(t,y) utils.AircraftEOM( ...

@@ -84,8 +84,8 @@ agentOpts = rlPPOAgentOptions( ...
 %      e.g. 'saved_agents/run_0423_1045/stage1/Agent580.mat'
 %   4. Re-run — the script will load the checkpoint and skip completed stages
 START_STAGE      = 1;    % which curriculum stage to begin at (1 = fresh start)
-%CHECKPOINT_FILE  = 'saved_agents/run_0423_1023/stage1/Agent497.mat';   % '' = build fresh agent; set path to resume from checkpoint
-CHECKPOINT_FILE = '';
+CHECKPOINT_FILE  = 'saved_agents/run_0426_2054/stage1/Agent305.mat';   % to resume ttraining from sundya night
+%CHECKPOINT_FILE = '';
 %% ────────────────────────────────────────────────────────────────────────
 
 if isempty(CHECKPOINT_FILE)
